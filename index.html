@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#f5f1e8">
+<title>Sezam Kitchen Timers</title>
+<link rel="manifest" href="manifest.webmanifest">
+<!-- iOS home-screen (Safari ignores the manifest for these) -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Sezam Timers">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='18' r='11' fill='%23e8600f'/%3E%3Crect x='13' y='2' width='6' height='4' rx='1' fill='%231d211e'/%3E%3Cline x1='16' y1='18' x2='16' y2='11' stroke='%23fff8f0' stroke-width='2.5' stroke-linecap='round'/%3E%3Cline x1='16' y1='18' x2='21' y2='18' stroke='%23fff8f0' stroke-width='2.5' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@500;700;800&family=Chivo+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f5f1e8;
+  --panel:#ffffff;
+  --panel-2:#fbf8f1;
+  --line:rgba(28,33,28,.12);
+  --text:#1d211e;
+  --muted:#828a80;
+  --ember:#e8600f;
+  --amber:#dd9207;
+  --mint:#0fa96a;
+  --red:#e03131;
+  --on-accent:#fff8f0;
+  --tile-r:20px;
+  --ring-w:10px;   /* thickness of the colored progress border */
+  font-size:16px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;overscroll-behavior:none}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Big Shoulders Display',system-ui,sans-serif;
+  touch-action:manipulation;                 /* kill double-tap zoom / 300ms delay */
+  user-select:none;-webkit-user-select:none;
+  -webkit-touch-callout:none;                 /* no long-press callout on iOS */
+  display:flex;flex-direction:column;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(232,96,15,.07), transparent 60%),
+    radial-gradient(900px 500px at 10% 110%, rgba(15,169,106,.05), transparent 60%);
+}
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.35;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.04 0'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ---------- Header ---------- */
+header{
+  position:relative;z-index:2;
+  display:flex;align-items:center;gap:14px;
+  padding:10px 16px;
+  padding-left:max(16px, env(safe-area-inset-left));
+  padding-right:max(16px, env(safe-area-inset-right));
+  padding-top:max(10px, env(safe-area-inset-top));
+  border-bottom:1px solid var(--line);
+  background:linear-gradient(180deg, rgba(255,255,255,.6), transparent);
+}
+.logo{display:flex;align-items:baseline;gap:8px}
+.logo b{font-weight:800;font-size:1.45rem;letter-spacing:.06em;text-transform:uppercase}
+.logo b em{font-style:normal;color:var(--ember)}
+.logo span{font-family:'Chivo Mono',monospace;font-size:.62rem;color:var(--muted);letter-spacing:.22em;text-transform:uppercase}
+.clock{font-family:'Chivo Mono',monospace;font-size:.85rem;color:var(--muted);margin-left:4px}
+header .spacer{flex:1}
+.hbtn{
+  font-family:'Big Shoulders Display',sans-serif;font-weight:700;font-size:1rem;
+  letter-spacing:.1em;text-transform:uppercase;
+  background:var(--panel);color:var(--text);
+  border:1px solid var(--line);border-radius:12px;
+  padding:10px 18px;cursor:pointer;transition:all .15s;
+}
+.hbtn{box-shadow:0 1px 3px rgba(28,33,28,.07)}
+.hbtn:active{transform:scale(.96)}
+.hbtn.primary{background:var(--ember);border-color:var(--ember);color:var(--on-accent)}
+.hbtn.active{background:var(--amber);border-color:var(--amber);color:var(--on-accent)}
+
+/* ---------- Grid ---------- */
+#gridWrap{flex:1;position:relative;z-index:1;padding:12px;overflow:hidden;
+  padding-left:max(12px, env(safe-area-inset-left));
+  padding-right:max(12px, env(safe-area-inset-right));
+  padding-bottom:max(12px, env(safe-area-inset-bottom));
+}
+#grid{
+  display:grid;gap:12px;height:100%;
+  align-content:center;justify-content:center;
+}
+#empty{
+  position:absolute;inset:0;display:flex;flex-direction:column;gap:10px;
+  align-items:center;justify-content:center;color:var(--muted);
+  letter-spacing:.15em;text-transform:uppercase;font-weight:700;font-size:1.1rem;
+  pointer-events:none; /* never intercept taps on tiles behind it */
+}
+#empty[hidden]{display:none} /* id-specificity rule must not override the hidden attr */
+#empty .big{font-size:3rem;color:var(--line)}
+
+/* ---------- Tile ---------- */
+.tile{
+  position:relative;border-radius:var(--tile-r);
+  padding:var(--ring-w); /* colored progress ring thickness */
+  background:rgba(28,33,28,.08);
+  box-shadow:0 2px 10px rgba(28,33,28,.08);
+  cursor:pointer;overflow:hidden;
+  transition:transform .15s;
+  container-type:size;
+}
+.tile:active{transform:scale(.98)}
+.tile .inner{
+  position:relative;height:100%;border-radius:calc(var(--tile-r) - 8px);
+  background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:2cqh;padding:4cqh 3cqw;overflow:hidden;
+}
+.tile .name{
+  font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+  font-size:14cqh;line-height:1;text-align:center;
+  max-width:96cqw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.tile .time{
+  font-family:'Chivo Mono',monospace;font-weight:700;
+  font-size:26cqh;line-height:1;letter-spacing:-.02em;
+  font-variant-numeric:tabular-nums;
+}
+.tile .sub{
+  font-family:'Chivo Mono',monospace;font-size:6.5cqh;
+  color:var(--muted);letter-spacing:.18em;text-transform:uppercase;
+}
+/* idle */
+.tile[data-status="idle"] .time{color:var(--muted)}
+.tile[data-status="idle"] .name{color:var(--text)}
+/* running ring: conic gradient on tile bg */
+.tile[data-status="running"]{background:conic-gradient(var(--ring-c,var(--mint)) calc(var(--p,1)*360deg), rgba(28,33,28,.10) 0)}
+.tile[data-status="running"] .time{color:var(--text)}
+.tile[data-status="running"] .name{color:var(--ring-c,var(--mint))}
+/* paused: frozen grey ring + gentle breathing so it reads as held, not stopped */
+.tile[data-status="paused"]{background:conic-gradient(var(--ring-c,var(--muted)) calc(var(--p,1)*360deg), rgba(28,33,28,.10) 0)}
+.tile[data-status="paused"] .inner{animation:pausedBreath 1.8s ease-in-out infinite}
+.tile[data-status="paused"] .time{color:var(--muted)}
+.tile[data-status="paused"] .name{color:var(--muted)}
+.tile[data-status="paused"] .sub{color:var(--amber)}
+@keyframes pausedBreath{0%,100%{opacity:1}50%{opacity:.68}}
+/* ringing */
+.tile[data-status="ringing"]{background:var(--red);animation:pulse .9s ease-in-out infinite}
+.tile[data-status="ringing"] .inner{background:linear-gradient(180deg,#ffe9e6,#ffdcd6)}
+.tile[data-status="ringing"] .name{color:#8f1414}
+.tile[data-status="ringing"] .time{color:var(--red);animation:blink .9s step-end infinite}
+.tile[data-status="ringing"] .sub{color:#c2312e}
+@keyframes pulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(255,69,69,.55);transform:scale(1)}
+  50%{box-shadow:0 0 34px 6px rgba(255,69,69,.28);transform:scale(1.015)}
+}
+@keyframes blink{50%{opacity:.45}}
+
+/* running controls */
+.tctl{
+  display:flex;gap:2.5cqw;margin-top:1cqh;
+}
+.tctl button{
+  font-family:'Chivo Mono',monospace;font-weight:700;font-size:5.5cqh;
+  background:rgba(28,33,28,.05);color:var(--text);
+  border:1px solid var(--line);border-radius:10px;
+  padding:1.6cqh 3.5cqw;cursor:pointer;min-width:16cqw;
+  transition:background .12s;
+}
+.tctl button:active{background:rgba(28,33,28,.14)}
+/* keep the destructive reset well clear of the ±10s so it isn't hit by mistake */
+.tctl button.stop{color:var(--red);margin-left:10cqw;border-color:rgba(224,49,49,.45);background:rgba(224,49,49,.06)}
+.tctl button.stop:active{background:rgba(224,49,49,.18)}
+.tile[data-status="idle"] .tctl,.tile[data-status="ringing"] .tctl{display:none}
+.tile[data-status="idle"] .sub.go{color:var(--ember)}
+
+/* edit mode */
+body.editing .tile{animation:wobble 2.6s ease-in-out infinite}
+body.editing .tile:nth-child(2n){animation-delay:-.6s}
+body.editing .tile:nth-child(3n){animation-delay:-1.4s}
+@keyframes wobble{0%,100%{transform:rotate(0deg)}25%{transform:rotate(.5deg)}75%{transform:rotate(-.5deg)}}
+.tile .editBadge{
+  position:absolute;top:1.5cqh;right:2cqw;z-index:3;display:none;
+  font-family:'Chivo Mono',monospace;font-size:5cqh;color:var(--amber);
+  letter-spacing:.1em;
+}
+body.editing .tile .editBadge{display:block}
+.tile.dragging{opacity:.9;z-index:50;transform:scale(1.05);box-shadow:0 18px 44px rgba(28,33,28,.3);transition:none;animation:none}
+.tile.dropTarget .inner{outline:2px dashed var(--amber);outline-offset:-6px}
+
+/* ---------- Modal ---------- */
+#overlay{
+  position:fixed;inset:0;z-index:100;display:none;
+  background:rgba(40,45,40,.4);backdrop-filter:blur(6px);
+  align-items:center;justify-content:center;padding:20px;
+}
+#overlay.open{display:flex}
+#modal{
+  width:min(560px,100%);max-height:92vh;overflow-y:auto;
+  background:var(--panel-2);border:1px solid var(--line);border-radius:20px;
+  padding:26px 26px 22px;box-shadow:0 24px 60px rgba(28,33,28,.25);
+}
+#modal h2{
+  font-weight:800;font-size:1.6rem;letter-spacing:.08em;text-transform:uppercase;
+  margin-bottom:20px;display:flex;align-items:center;gap:10px;
+}
+#modal h2::before{content:'';width:10px;height:26px;background:var(--ember);border-radius:3px}
+.field{margin-bottom:18px}
+.field label{
+  display:block;font-family:'Chivo Mono',monospace;font-size:.68rem;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;
+}
+.field input[type=text]{
+  width:100%;background:var(--bg);border:1px solid var(--line);border-radius:12px;
+  color:var(--text);font-family:'Big Shoulders Display',sans-serif;font-weight:700;
+  font-size:1.3rem;letter-spacing:.05em;padding:12px 14px;outline:none;
+}
+.field input[type=text]:focus{border-color:var(--amber)}
+.durRow{display:flex;gap:14px;align-items:center;justify-content:center;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:14px}
+.durCol{display:flex;flex-direction:column;align-items:center;gap:6px}
+.durCol .val{font-family:'Chivo Mono',monospace;font-size:2.4rem;font-weight:700;min-width:2ch;text-align:center}
+.durCol .unit{font-family:'Chivo Mono',monospace;font-size:.6rem;letter-spacing:.2em;color:var(--muted);text-transform:uppercase}
+.durCol button{
+  width:52px;height:40px;border-radius:10px;border:1px solid var(--line);
+  background:var(--panel);color:var(--text);font-size:1.3rem;cursor:pointer;
+}
+.durCol button:active{background:var(--panel-2)}
+.durSep{font-family:'Chivo Mono',monospace;font-size:2rem;color:var(--muted)}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.presets button{
+  font-family:'Chivo Mono',monospace;font-size:.85rem;font-weight:700;
+  background:var(--panel);border:1px solid var(--line);border-radius:999px;
+  color:var(--text);padding:8px 15px;cursor:pointer;
+}
+.presets button:active,.presets button.sel{background:var(--ember);border-color:var(--ember);color:var(--on-accent)}
+.toneRow{display:flex;gap:8px}
+.toneRow button{
+  flex:1;font-family:'Big Shoulders Display',sans-serif;font-weight:700;font-size:1rem;
+  letter-spacing:.08em;text-transform:uppercase;
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  color:var(--text);padding:12px 6px;cursor:pointer;
+}
+.toneRow button.sel{background:var(--amber);border-color:var(--amber);color:var(--on-accent)}
+.modalBtns{display:flex;gap:10px;margin-top:24px}
+.modalBtns button{
+  flex:1;font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:1.15rem;
+  letter-spacing:.12em;text-transform:uppercase;border-radius:14px;
+  padding:15px 10px;cursor:pointer;border:1px solid var(--line);
+}
+#mSave{background:var(--ember);border-color:var(--ember);color:var(--on-accent)}
+#mCancel{background:var(--panel);color:var(--text)}
+#mDelete{background:none;border:1px solid rgba(255,69,69,.4);color:var(--red);flex:0 0 auto;padding:15px 20px}
+</style>
+</head>
+<body>
+
+<!-- iOS 17.4+ haptic hack: toggling a <switch> plays a system tick. Best-effort;
+     Android uses the Vibration API instead (iOS Safari has no Vibration API). -->
+<input type="checkbox" id="hapticSwitch" switch aria-hidden="true"
+       style="position:absolute;left:-9999px;width:0;height:0;opacity:0;pointer-events:none">
+<label id="hapticLabel" for="hapticSwitch" aria-hidden="true"
+       style="position:absolute;left:-9999px;width:0;height:0;opacity:0;pointer-events:none"></label>
+
+<header>
+  <div class="logo"><b>SEZAM<em>·</em>TIMERS</b><span>kitchen</span></div>
+  <div class="clock" id="clock"></div>
+  <div class="spacer"></div>
+  <button class="hbtn" id="editBtn">✎ Edit</button>
+  <button class="hbtn primary" id="newBtn">+ New</button>
+</header>
+
+<div id="gridWrap">
+  <div id="grid"></div>
+  <div id="empty" hidden><div class="big">◷</div><div>No timers yet — tap + NEW</div></div>
+</div>
+
+<div id="overlay">
+  <div id="modal">
+    <h2 id="mTitle">New timer</h2>
+    <div class="field">
+      <label>Name (shown on tile)</label>
+      <input type="text" id="mName" maxlength="24" placeholder="Fries">
+    </div>
+    <div class="field">
+      <label>Duration</label>
+      <div class="durRow">
+        <div class="durCol">
+          <button data-d="min+">▲</button>
+          <div class="val" id="mMin">3</div>
+          <div class="unit">min</div>
+          <button data-d="min-">▼</button>
+        </div>
+        <div class="durSep">:</div>
+        <div class="durCol">
+          <button data-d="sec+">▲</button>
+          <div class="val" id="mSec">00</div>
+          <div class="unit">sec</div>
+          <button data-d="sec-">▼</button>
+        </div>
+      </div>
+      <div class="presets" id="mPresets"></div>
+    </div>
+    <div class="field">
+      <label>Ringtone (tap to preview)</label>
+      <div class="toneRow" id="mTones"></div>
+    </div>
+    <div class="field">
+      <label>Voice announcement (English)</label>
+      <input type="text" id="mPhrase" maxlength="60" placeholder="The fries are ready">
+    </div>
+    <div class="modalBtns">
+      <button id="mDelete">🗑</button>
+      <button id="mCancel">Cancel</button>
+      <button id="mSave">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ================= Data ================= */
+const LS_DEF='sezam-timers-v1', LS_RUN='sezam-timers-run-v1';
+const TONES=['Bell','Beep','Chime'];
+const PRESETS=[[0,30],[1,0],[2,0],[3,0],[5,0],[8,0],[10,0],[15,0]];
+// Default timer set. Bumping SEED_VERSION re-applies this list on next load
+// (this REPLACES the current timers — including any added by hand).
+const SEED_VERSION='2';
+const DEFAULTS=[
+  {name:'Fries',            durationSec:240, tone:'Bell',  phrase:'The fries are ready'},
+  {name:'Mozza or elastics',durationSec:135, tone:'Beep',  phrase:'The mozza is ready'},
+  {name:'Manoushe',         durationSec:45,  tone:'Chime', phrase:'The manoushe is ready'},
+  {name:'Crispy chicken',   durationSec:360, tone:'Bell',  phrase:'The crispy chicken is ready'},
+  {name:'Dough making',     durationSec:720, tone:'Beep',  phrase:'The dough is ready'},
+  {name:'Cooking chicken',  durationSec:360, tone:'Chime', phrase:'The cooked chicken is ready'},
+  {name:'Donut',            durationSec:90,  tone:'Bell',  phrase:'The donuts are ready'},
+];
+let timers=[];            // [{id,name,durationSec,tone,phrase}]
+let run={};               // {id:{status:'running'|'ringing', endsAt, nextVoiceAt, voiceGap}}
+let editing=false, editingId=null;
+
+function load(){
+  try{timers=JSON.parse(localStorage.getItem(LS_DEF))||[]}catch(e){timers=[]}
+  try{run=JSON.parse(localStorage.getItem(LS_RUN))||{}}catch(e){run={}}
+  // reconcile stale run entries
+  const ids=new Set(timers.map(t=>t.id));
+  for(const id in run){ if(!ids.has(id)) delete run[id]; }
+}
+function saveDefs(){localStorage.setItem(LS_DEF,JSON.stringify(timers))}
+function saveRun(){localStorage.setItem(LS_RUN,JSON.stringify(run))}
+const uid=()=>Math.random().toString(36).slice(2,10);
+
+/* ================= Audio ================= */
+let AC=null, speechReady=false;
+function ac(){ if(!AC) AC=new (window.AudioContext||window.webkitAudioContext)(); if(AC.state==='suspended') AC.resume(); return AC; }
+function unlockAudio(){
+  ac();
+  if(!speechReady && 'speechSynthesis' in window){
+    const u=new SpeechSynthesisUtterance(''); u.volume=0; speechSynthesis.speak(u); speechReady=true;
+  }
+}
+document.addEventListener('pointerdown', unlockAudio, {once:false});
+
+function env(g,t0,a,d,peak){ g.gain.setValueAtTime(0.0001,t0); g.gain.exponentialRampToValueAtTime(peak,t0+a); g.gain.exponentialRampToValueAtTime(0.0001,t0+a+d); }
+function tone(freq,t0,dur,type='sine',peak=.5){
+  const c=ac(),o=c.createOscillator(),g=c.createGain();
+  o.type=type;o.frequency.value=freq;o.connect(g);g.connect(c.destination);
+  env(g,t0,0.01,dur,peak); o.start(t0); o.stop(t0+dur+0.1);
+}
+// Haptics: Android via Vibration API; iOS 17.4+ via the hidden <switch> tick.
+// iOS Safari has NO Vibration API, so the switch hack is the only option there
+// (and it is not guaranteed on older iOS).
+const hapticLabel=document.getElementById('hapticLabel');
+function haptic(pattern){
+  try{ if(navigator.vibrate) navigator.vibrate(pattern); }catch(e){}
+  try{ if(hapticLabel) hapticLabel.click(); }catch(e){}
+}
+function playClick(up=true){
+  try{ const t=ac().currentTime; tone(up?1250:820,t,0.06,'square',.25); }catch(e){}
+  haptic(30);
+}
+function playRingtone(name){
+  try{
+    const t=ac().currentTime;
+    if(name==='Beep'){ [0,.22,.44].forEach(d=>tone(1050,t+d,0.14,'square',.5)); }
+    else if(name==='Chime'){ [[523.25,0],[659.25,.18],[783.99,.36]].forEach(([f,d])=>tone(f,t+d,0.5,'sine',.45)); }
+    else { /* Bell */ tone(880,t,0.9,'sine',.55); tone(1760,t,0.5,'sine',.2); tone(880,t+.55,0.9,'sine',.45); tone(1760,t+.55,0.5,'sine',.15); }
+  }catch(e){}
+}
+let enVoice=null;
+// Web Speech API exposes no gender field → infer a FEMALE English voice by name.
+// Hints cover Windows (Zira/Aria/Jenny), macOS/iOS (Samantha/Karen/Moira…), Android/Google.
+const FEMALE=/zira|aria|jenny|michelle|\beva\b|hazel|susan|catherine|linda|heera|samantha|karen|moira|tessa|fiona|victoria|allison|\bava\b|vicki|kathy|serena|nicky|\bzoe\b|female|woman|girl/i;
+const MALE=/david|\bmark\b|george|james|daniel|\balex\b|fred|\btom\b|aaron|arthur|gordon|oliver|rishi|ravi|\bguy\b|\bmale\b|\bman\b/i;
+function scoreVoice(v){
+  let s=0;
+  if(/^en/i.test(v.lang)) s+=10; else s-=100;   // must be English
+  if(/en[-_]US/i.test(v.lang)) s+=3;             // prefer US accent
+  if(FEMALE.test(v.name)) s+=20;                 // prefer female
+  if(MALE.test(v.name)) s-=20;                   // avoid male
+  if(v.default) s+=1;
+  return s;
+}
+function pickVoice(){
+  const vs=speechSynthesis.getVoices();
+  if(!vs.length) return;
+  enVoice=vs.slice().sort((a,b)=>scoreVoice(b)-scoreVoice(a))[0]||null;
+}
+if('speechSynthesis' in window){ pickVoice(); speechSynthesis.onvoiceschanged=pickVoice; }
+/* Speech queue: announcements take turns instead of interrupting each other.
+   Only one utterance is ever handed to the browser at a time; we wait for it to
+   finish (+ a short beat) before the next. Stopping one timer removes only ITS
+   pending phrases and never cuts another timer that is still ringing. */
+let speechQueue=[], speaking=false, currentSpeechId=null, speechGen=0;
+function drainSpeech(){
+  if(speaking || !('speechSynthesis' in window)) return;
+  const item=speechQueue.shift(); if(!item) return;
+  speaking=true; currentSpeechId=item.id;
+  const myGen=++speechGen;
+  const done=()=>{ if(myGen!==speechGen) return; speaking=false; currentSpeechId=null; setTimeout(drainSpeech,300); };
+  try{
+    const u=new SpeechSynthesisUtterance(item.text);
+    u.lang='en-US'; if(enVoice)u.voice=enVoice; u.rate=1; u.volume=1;
+    u.onend=done; u.onerror=done;
+    speechSynthesis.speak(u);
+  }catch(e){ done(); }
+}
+function enqueueSpeech(id,text){
+  if(!('speechSynthesis' in window)) return;
+  speechQueue.push({id,text}); drainSpeech();
+}
+function stopSpeechFor(id){
+  if(!('speechSynthesis' in window)) return;
+  speechQueue=speechQueue.filter(x=>x.id!==id);
+  if(currentSpeechId===id){
+    speechGen++;                          // invalidate the in-flight utterance's onend
+    try{speechSynthesis.cancel()}catch(e){}
+    speaking=false; currentSpeechId=null;
+    setTimeout(drainSpeech,60);           // let another timer's queued voice continue
+  }
+}
+
+/* ================= Timer engine ================= */
+const now=()=>Date.now();
+function startTimer(t){
+  run[t.id]={status:'running',endsAt:now()+t.durationSec*1000};
+  saveRun(); playClick(true); render();
+}
+function stopTimer(id,click=true){
+  delete run[id]; saveRun();
+  if(click) playClick(false);
+  stopSpeechFor(id);   // cancel only THIS timer's voice, not others still ringing
+  render();
+}
+function adjustTimer(id,deltaSec){
+  const r=run[id]; if(!r)return;
+  if(r.status==='running') r.endsAt+=deltaSec*1000;
+  else if(r.status==='paused') r.remainingMs=Math.max(0,(r.remainingMs||0)+deltaSec*1000);
+  else return;
+  saveRun(); playClick(deltaSec>0); tick();
+}
+function pauseTimer(id){
+  const r=run[id]; if(!r||r.status!=='running')return;
+  r.status='paused'; r.remainingMs=Math.max(0,r.endsAt-now()); delete r.endsAt;
+  saveRun(); playClick(false); render();
+}
+function resumeTimer(id){
+  const r=run[id]; if(!r||r.status!=='paused')return;
+  r.status='running'; r.endsAt=now()+(r.remainingMs||0); delete r.remainingMs;
+  saveRun(); playClick(true); render();
+}
+function fireAlarm(t){
+  const r=run[t.id];
+  r.status='ringing'; r.rangAt=r.endsAt;
+  r.voiceGap=7000;            // first repeat after ~7s
+  r.nextVoiceAt=now()+r.voiceGap;
+  saveRun();
+  playRingtone(t.tone);
+  setTimeout(()=>enqueueSpeech(t.id,t.phrase||t.name+' ready'),900);
+  haptic([200,100,200]);
+  render();
+}
+function alarmRepeat(t){
+  const r=run[t.id]; if(!r||r.status!=='ringing')return;
+  playRingtone(t.tone);
+  setTimeout(()=>enqueueSpeech(t.id,t.phrase||t.name+' ready'),700);
+  haptic([150,80,150]);
+  r.voiceGap=Math.max(2000, r.voiceGap*0.72);  // escalate
+  r.nextVoiceAt=now()+r.voiceGap;
+  saveRun();
+}
+function tick(){
+  const n=now();
+  for(const t of timers){
+    const r=run[t.id]; if(!r)continue;
+    if(r.status==='running' && n>=r.endsAt) fireAlarm(t);
+    else if(r.status==='ringing' && n>=r.nextVoiceAt) alarmRepeat(t);
+  }
+  updateTiles();
+}
+setInterval(tick,150);
+
+/* ================= Rendering ================= */
+const grid=document.getElementById('grid'), gridWrap=document.getElementById('gridWrap'), empty=document.getElementById('empty');
+const fmt=s=>{s=Math.max(0,Math.round(s));const m=Math.floor(s/60);return m+':'+String(s%60).padStart(2,'0')};
+const fmtUp=s=>{s=Math.max(0,Math.round(s));const m=Math.floor(s/60);return '+'+m+':'+String(s%60).padStart(2,'0')};
+
+function layout(){
+  const N=Math.max(timers.length,1);
+  const cs=getComputedStyle(gridWrap);
+  const padX=parseFloat(cs.paddingLeft)+parseFloat(cs.paddingRight);
+  const padY=parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom);
+  const W=gridWrap.clientWidth-padX, H=gridWrap.clientHeight-padY, GAP=12;
+  let best={cols:1,size:0,th:0};
+  for(let c=1;c<=N;c++){
+    const rows=Math.ceil(N/c);
+    const tw=(W-(c-1)*GAP)/c, th=(H-(rows-1)*GAP)/rows;
+    const size=Math.min(tw,th*1.25); // allow slightly wide tiles
+    if(size>best.size) best={cols:c,size,th:Math.min(th,tw*0.85)};
+  }
+  grid.style.gridTemplateColumns=`repeat(${best.cols}, minmax(0,${Math.floor((W-(best.cols-1)*GAP)/best.cols)}px))`;
+  grid.style.gridAutoRows=Math.floor(best.th)+'px';
+}
+new ResizeObserver(layout).observe(gridWrap);
+
+function render(){
+  empty.hidden=timers.length>0;
+  grid.innerHTML='';
+  for(const t of timers){
+    const el=document.createElement('div');
+    el.className='tile'; el.dataset.id=t.id;
+    el.innerHTML=`<div class="inner">
+      <div class="editBadge">✎ EDIT</div>
+      <div class="name"></div>
+      <div class="time"></div>
+      <div class="sub"></div>
+      <div class="tctl">
+        <button data-a="minus">−10s</button>
+        <button data-a="plus">+10s</button>
+        <button data-a="stop" class="stop">✕</button>
+      </div>
+    </div>`;
+    el.querySelector('.name').textContent=t.name;
+    grid.appendChild(el);
+  }
+  layout(); updateTiles();
+}
+function updateTiles(){
+  const n=now();
+  for(const el of grid.children){
+    const t=timers.find(x=>x.id===el.dataset.id); if(!t)continue;
+    const r=run[t.id];
+    const timeEl=el.querySelector('.time'), subEl=el.querySelector('.sub');
+    if(!r){
+      el.dataset.status='idle';
+      timeEl.textContent=fmt(t.durationSec);
+      subEl.textContent='tap to start'; subEl.classList.add('go');
+    }else if(r.status==='running'){
+      el.dataset.status='running';
+      const rem=(r.endsAt-n)/1000, p=Math.min(1,Math.max(0,rem/t.durationSec));
+      el.style.setProperty('--p',p.toFixed(4));
+      el.style.setProperty('--ring-c', p<=0.15?'var(--red)': p<=0.35?'var(--amber)':'var(--mint)');
+      timeEl.textContent=fmt(rem);
+      subEl.textContent='tap to pause'; subEl.classList.remove('go');
+    }else if(r.status==='paused'){
+      el.dataset.status='paused';
+      const rem=(r.remainingMs||0)/1000, p=Math.min(1,Math.max(0,rem/t.durationSec));
+      el.style.setProperty('--p',p.toFixed(4));
+      el.style.setProperty('--ring-c','var(--muted)');
+      timeEl.textContent=fmt(rem);
+      subEl.textContent='❚❚ paused · tap to resume'; subEl.classList.remove('go');
+    }else{
+      el.dataset.status='ringing';
+      timeEl.textContent=fmtUp((n-r.rangAt)/1000);
+      subEl.textContent='tap to stop'; subEl.classList.remove('go');
+    }
+  }
+}
+
+/* ================= Interactions ================= */
+// On an active tile: single tap = pause/resume, double tap = reset. We wait a
+// short window to tell them apart (a lone tap resolves after ~260ms).
+const DBL_MS=260;
+let tapPending={};   // id -> timeout handle for a not-yet-resolved single tap
+grid.addEventListener('click',e=>{
+  const tile=e.target.closest('.tile'); if(!tile)return;
+  const id=tile.dataset.id, t=timers.find(x=>x.id===id); if(!t)return;
+  if(editing){ openModal(t); return; }
+  const btn=e.target.closest('button[data-a]');
+  if(btn){
+    if(btn.dataset.a==='plus')adjustTimer(id,10);
+    else if(btn.dataset.a==='minus')adjustTimer(id,-10);
+    else stopTimer(id);
+    return;
+  }
+  const r=run[id];
+  if(!r){ startTimer(t); return; }
+  if(r.status==='ringing'){ stopTimer(id); return; }
+  // running or paused → disambiguate single (pause/resume) vs double (reset)
+  if(tapPending[id]){
+    clearTimeout(tapPending[id]); delete tapPending[id];
+    stopTimer(id);                      // double tap → reset to initial duration
+  }else{
+    tapPending[id]=setTimeout(()=>{
+      delete tapPending[id];
+      const rr=run[id]; if(!rr)return;
+      if(rr.status==='running') pauseTimer(id);
+      else if(rr.status==='paused') resumeTimer(id);
+    },DBL_MS);
+  }
+});
+
+/* drag-to-reorder in edit mode (pointer-based, works on touch) */
+let drag=null;
+grid.addEventListener('pointerdown',e=>{
+  if(!editing)return;
+  const tile=e.target.closest('.tile'); if(!tile)return;
+  drag={tile,id:tile.dataset.id,startX:e.clientX,startY:e.clientY,moved:false};
+  tile.setPointerCapture(e.pointerId);
+});
+grid.addEventListener('pointermove',e=>{
+  if(!drag)return;
+  const dx=e.clientX-drag.startX, dy=e.clientY-drag.startY;
+  if(!drag.moved && Math.hypot(dx,dy)>12){drag.moved=true;drag.tile.classList.add('dragging')}
+  if(!drag.moved)return;
+  drag.tile.style.transform=`translate(${dx}px,${dy}px) scale(1.05)`;
+  const under=document.elementFromPoint(e.clientX,e.clientY);
+  const target=under && under.closest('.tile');
+  grid.querySelectorAll('.dropTarget').forEach(x=>x.classList.remove('dropTarget'));
+  if(target && target!==drag.tile){target.classList.add('dropTarget');drag.over=target.dataset.id}
+  else drag.over=null;
+});
+grid.addEventListener('pointerup',e=>{
+  if(!drag)return;
+  const{tile,id,over,moved}=drag;
+  tile.classList.remove('dragging');tile.style.transform='';
+  grid.querySelectorAll('.dropTarget').forEach(x=>x.classList.remove('dropTarget'));
+  if(moved&&over&&over!==id){
+    const from=timers.findIndex(t=>t.id===id), to=timers.findIndex(t=>t.id===over);
+    const[m]=timers.splice(from,1);timers.splice(to,0,m);
+    saveDefs();playClick(true);render();
+  }
+  drag=null;
+});
+
+/* ================= Edit mode ================= */
+const editBtn=document.getElementById('editBtn');
+editBtn.addEventListener('click',()=>{
+  editing=!editing;
+  document.body.classList.toggle('editing',editing);
+  editBtn.classList.toggle('active',editing);
+  editBtn.textContent=editing?'✓ Done':'✎ Edit';
+  playClick(editing);
+});
+
+/* ================= Modal ================= */
+const overlay=document.getElementById('overlay');
+const mName=document.getElementById('mName'),mMin=document.getElementById('mMin'),mSec=document.getElementById('mSec'),
+      mPhrase=document.getElementById('mPhrase'),mTitle=document.getElementById('mTitle'),
+      mTones=document.getElementById('mTones'),mPresets=document.getElementById('mPresets'),
+      mDelete=document.getElementById('mDelete');
+let mTone='Bell';
+
+TONES.forEach(name=>{
+  const b=document.createElement('button');b.textContent=name;
+  b.addEventListener('click',()=>{mTone=name;syncTones();playRingtone(name)});
+  mTones.appendChild(b);
+});
+function syncTones(){[...mTones.children].forEach(b=>b.classList.toggle('sel',b.textContent===mTone))}
+PRESETS.forEach(([m,s])=>{
+  const b=document.createElement('button');b.textContent=s?`${m}:${String(s).padStart(2,'0')}`:`${m} min`;
+  b.addEventListener('click',()=>{mMin.textContent=m;mSec.textContent=String(s).padStart(2,'0');syncPresets()});
+  mPresets.appendChild(b);
+});
+function syncPresets(){
+  const cur=(+mMin.textContent)*60+(+mSec.textContent);
+  [...mPresets.children].forEach((b,i)=>b.classList.toggle('sel',PRESETS[i][0]*60+PRESETS[i][1]===cur));
+}
+document.querySelectorAll('[data-d]').forEach(b=>b.addEventListener('click',()=>{
+  let m=+mMin.textContent,s=+mSec.textContent;
+  const d=b.dataset.d;
+  if(d==='min+')m=Math.min(180,m+1); if(d==='min-')m=Math.max(0,m-1);
+  if(d==='sec+')s=(s+5)%60; if(d==='sec-')s=(s+55)%60;
+  if(m===0&&s===0)s=5;
+  mMin.textContent=m;mSec.textContent=String(s).padStart(2,'0');syncPresets();
+}));
+
+function openModal(t){
+  editingId=t?t.id:null;
+  mTitle.textContent=t?'Edit timer':'New timer';
+  mName.value=t?t.name:'';
+  const d=t?t.durationSec:180;
+  mMin.textContent=Math.floor(d/60);mSec.textContent=String(d%60).padStart(2,'0');
+  mTone=t?t.tone:'Bell';
+  mPhrase.value=t?t.phrase:'';
+  mDelete.style.display=t?'':'none';
+  syncTones();syncPresets();
+  overlay.classList.add('open');
+  if(!t)setTimeout(()=>mName.focus(),100);
+}
+function closeModal(){overlay.classList.remove('open');editingId=null}
+overlay.addEventListener('click',e=>{if(e.target===overlay)closeModal()});
+document.getElementById('mCancel').addEventListener('click',closeModal);
+document.getElementById('newBtn').addEventListener('click',()=>openModal(null));
+document.getElementById('mSave').addEventListener('click',()=>{
+  const name=mName.value.trim()||'Timer';
+  const dur=Math.max(5,(+mMin.textContent)*60+(+mSec.textContent));
+  const phrase=mPhrase.value.trim()||`The ${name.toLowerCase()} is ready`;
+  if(editingId){
+    const t=timers.find(x=>x.id===editingId);
+    Object.assign(t,{name,durationSec:dur,tone:mTone,phrase});
+    if(run[t.id]&&run[t.id].status==='running'){/* keep running, duration applies next run */}
+  }else{
+    timers.push({id:uid(),name,durationSec:dur,tone:mTone,phrase});
+  }
+  saveDefs();playClick(true);closeModal();render();
+});
+mDelete.addEventListener('click',()=>{
+  if(!editingId)return;
+  stopSpeechFor(editingId);
+  timers=timers.filter(t=>t.id!==editingId);
+  delete run[editingId];
+  saveDefs();saveRun();playClick(false);closeModal();render();
+});
+
+/* ================= Wake lock & clock ================= */
+let wl=null;
+async function wakeLock(){
+  try{ if('wakeLock' in navigator) wl=await navigator.wakeLock.request('screen'); }catch(e){}
+}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')wakeLock()});
+wakeLock();
+const clockEl=document.getElementById('clock');
+setInterval(()=>{clockEl.textContent=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})},1000);
+
+/* ================= Boot ================= */
+load();
+// Ship the app with the default timer set. Applied on a fresh device, or once
+// whenever SEED_VERSION changes. After that, edits/additions persist in
+// localStorage across refreshes (a refresh does NOT wipe your changes or a
+// running timer). Real cross-device sync will come with the database later.
+if(localStorage.getItem('sezam-timers-seed-ver')!==SEED_VERSION){
+  timers=DEFAULTS.map(d=>({id:uid(),...d}));
+  run={};
+  localStorage.setItem('sezam-timers-seed-ver',SEED_VERSION);
+  saveDefs(); saveRun();
+}
+render();
+
+/* Register the service worker (offline shell + installability). Relative path
+   keeps the scope correct under the GitHub Pages sub-directory. */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>{ navigator.serviceWorker.register('sw.js').catch(()=>{}); });
+}
+</script>
+</body>
+</html>
