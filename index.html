@@ -29,6 +29,10 @@
   --amber:#dd9207;
   --mint:#0fa96a;
   --red:#e03131;
+  --track:#e7ded0;        /* revealed/elapsed area under the camembert */
+  --mint-fill:#5cc79a;    /* pie fill, by urgency */
+  --amber-fill:#edb24e;
+  --red-fill:#ec6a6a;
   --on-accent:#fff8f0;
   --tile-r:20px;
   --ring-w:10px;   /* thickness of the colored progress border */
@@ -84,6 +88,21 @@ header .spacer{flex:1}
 .hbtn:active{transform:scale(.96)}
 .hbtn.primary{background:var(--ember);border-color:var(--ember);color:var(--on-accent)}
 .hbtn.active{background:var(--amber);border-color:var(--amber);color:var(--on-accent)}
+.logo{min-width:0}                       /* allow the logo to shrink before buttons overflow */
+header .spacer{min-width:0}
+/* Narrow screens (phone portrait): drop the non-essentials so New/Edit/FR always fit */
+@media (max-width:820px){
+  #ver{display:none}
+  .logo span{display:none}
+  .clock{display:none}
+  header{gap:8px;padding-left:10px;padding-right:10px}
+  .hbtn{padding:9px 12px;font-size:.9rem}
+}
+@media (max-width:470px){
+  .logo b{font-size:1.12rem;letter-spacing:.03em}
+  .hbtn{padding:8px 9px;font-size:.8rem;letter-spacing:.04em}
+  header{gap:6px}
+}
 
 /* ---------- Grid ---------- */
 #gridWrap{flex:1;position:relative;z-index:1;padding:12px;overflow:hidden;
@@ -107,8 +126,7 @@ header .spacer{flex:1}
 /* ---------- Tile ---------- */
 .tile{
   position:relative;border-radius:var(--tile-r);
-  padding:var(--ring-w); /* colored progress ring thickness */
-  background:rgba(28,33,28,.08);
+  background:var(--panel);
   box-shadow:0 2px 10px rgba(28,33,28,.08);
   cursor:pointer;overflow:hidden;
   transition:transform .15s;
@@ -116,10 +134,11 @@ header .spacer{flex:1}
 }
 .tile:active{transform:scale(.98)}
 .tile .inner{
-  position:relative;height:100%;border-radius:calc(var(--tile-r) - 8px);
-  background:linear-gradient(180deg,var(--panel-2),var(--panel));
+  position:relative;height:100%;border-radius:var(--tile-r);
+  background:transparent;
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:2cqh;padding:4cqh 3cqw;overflow:hidden;
+  gap:1.4cqh;padding:3.5cqh 3cqw;overflow:hidden;
+  text-shadow:0 1px 2px rgba(255,248,240,.6);   /* lift text off the sweeping colour */
 }
 .tile .name{
   font-weight:800;letter-spacing:.06em;text-transform:uppercase;
@@ -135,20 +154,21 @@ header .spacer{flex:1}
   font-family:'Chivo Mono',monospace;font-size:6.5cqh;
   color:var(--muted);letter-spacing:.18em;text-transform:uppercase;
 }
-/* idle */
+/* idle: flat neutral panel (so a running/cooking tile stands out at a glance) */
+.tile[data-status="idle"]{background:var(--panel)}
+.tile[data-status="idle"] .inner{text-shadow:none}
 .tile[data-status="idle"] .time{color:var(--muted)}
 .tile[data-status="idle"] .name{color:var(--text)}
-/* running ring: conic gradient on tile bg */
-.tile[data-status="running"]{background:conic-gradient(var(--ring-c,var(--mint)) calc(var(--p,1)*360deg), rgba(28,33,28,.10) 0)}
-.tile[data-status="running"] .time{color:var(--text)}
-.tile[data-status="running"] .name{color:var(--ring-c,var(--mint))}
-/* paused: frozen grey ring + gentle breathing so it reads as held, not stopped */
-.tile[data-status="paused"]{background:conic-gradient(var(--ring-c,var(--muted)) calc(var(--p,1)*360deg), rgba(28,33,28,.10) 0)}
+/* running / paused: full-tile CAMEMBERT — the filled wedge = time remaining,
+   sweeping clockwise from 12 o'clock; the track is revealed as it depletes. */
+.tile[data-status="running"],.tile[data-status="paused"]{
+  background:conic-gradient(from -90deg, var(--fill,var(--mint-fill)) calc(var(--p,1)*360deg), var(--track) 0);
+}
+.tile[data-status="running"] .time,.tile[data-status="running"] .name{color:var(--text)}
 .tile[data-status="paused"] .inner{animation:pausedBreath 1.8s ease-in-out infinite}
-.tile[data-status="paused"] .time{color:var(--muted)}
-.tile[data-status="paused"] .name{color:var(--muted)}
-.tile[data-status="paused"] .sub{color:var(--amber)}
-@keyframes pausedBreath{0%,100%{opacity:1}50%{opacity:.68}}
+.tile[data-status="paused"] .time,.tile[data-status="paused"] .name{color:#4a4a44}
+.tile[data-status="paused"] .sub{color:#7a5a12}
+@keyframes pausedBreath{0%,100%{opacity:1}50%{opacity:.72}}
 /* ringing */
 .tile[data-status="ringing"]{background:var(--red);animation:pulse .9s ease-in-out infinite}
 .tile[data-status="ringing"] .inner{background:linear-gradient(180deg,#ffe9e6,#ffdcd6)}
@@ -161,26 +181,28 @@ header .spacer{flex:1}
 }
 @keyframes blink{50%{opacity:.45}}
 
-/* running controls */
+/* running controls — larger, solid so they stay tappable/legible over the pie */
 .tctl{
-  display:flex;gap:2.5cqw;margin-top:1cqh;
+  display:flex;gap:3cqw;margin-top:1.6cqh;
 }
 .tctl button{
-  font-family:'Chivo Mono',monospace;font-weight:700;font-size:5.5cqh;
-  background:rgba(28,33,28,.05);color:var(--text);
-  border:1px solid var(--line);border-radius:10px;
-  padding:1.6cqh 3.5cqw;cursor:pointer;min-width:16cqw;
-  transition:background .12s;
+  font-family:'Chivo Mono',monospace;font-weight:700;font-size:8cqh;
+  background:var(--panel);color:var(--text);text-shadow:none;
+  border:1px solid var(--line);border-radius:13px;
+  padding:2.4cqh 4.8cqw;cursor:pointer;min-width:26cqw;
+  box-shadow:0 1px 4px rgba(28,33,28,.16);
+  transition:background .12s,transform .12s;
 }
-.tctl button:active{background:rgba(28,33,28,.14)}
+.tctl button:active{background:var(--panel-2);transform:scale(.95)}
 /* keep the destructive reset well clear of the ±10s so it isn't hit by mistake */
-.tctl button.stop{color:var(--red);margin-left:10cqw;border-color:rgba(224,49,49,.45);background:rgba(224,49,49,.06)}
-.tctl button.stop:active{background:rgba(224,49,49,.18)}
+.tctl button.stop{color:var(--red);margin-left:8cqw;min-width:auto;border-color:rgba(224,49,49,.5);background:rgba(255,241,241,.96)}
+.tctl button.stop:active{background:rgba(224,49,49,.16)}
 .tile[data-status="idle"] .tctl,.tile[data-status="ringing"] .tctl{display:none}
 .tile[data-status="idle"] .sub.go{color:var(--ember)}
 
 /* edit mode */
 body.editing .tile{animation:wobble 2.6s ease-in-out infinite}
+body.editing .tile{touch-action:none}   /* let pointer-drag own the gesture on touch (no scroll steal) */
 body.editing .tile:nth-child(2n){animation-delay:-.6s}
 body.editing .tile:nth-child(3n){animation-delay:-1.4s}
 @keyframes wobble{0%,100%{transform:rotate(0deg)}25%{transform:rotate(.5deg)}75%{transform:rotate(-.5deg)}}
@@ -255,6 +277,56 @@ body.editing .tile .editBadge{display:block}
 #mSave{background:var(--ember);border-color:var(--ember);color:var(--on-accent)}
 #mCancel{background:var(--panel);color:var(--text)}
 #mDelete{background:none;border:1px solid rgba(255,69,69,.4);color:var(--red);flex:0 0 auto;padding:15px 20px}
+
+/* ---------- Version tag (prototyping aid) ---------- */
+#ver{color:var(--muted);opacity:.55;font-size:.62rem;letter-spacing:.14em;text-transform:uppercase}
+
+/* ---------- Multi-step (chained) editor ---------- */
+.addStep{
+  margin-top:10px;width:100%;
+  font-family:'Chivo Mono',monospace;font-weight:700;font-size:.82rem;letter-spacing:.08em;
+  background:var(--panel);border:1px dashed var(--line);border-radius:12px;color:var(--muted);
+  padding:11px 14px;cursor:pointer;
+}
+.addStep:active{background:var(--panel-2)}
+.stepRow{
+  display:flex;align-items:center;gap:8px;margin-bottom:8px;
+  background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:8px 10px;
+}
+.stepRow .stepNum{font-family:'Chivo Mono',monospace;font-weight:700;color:var(--ember);width:1.6ch;text-align:center;font-size:.9rem}
+.stepRow input{
+  background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--text);
+  font-family:'Chivo Mono',monospace;font-weight:700;padding:9px 8px;outline:none;
+}
+.stepRow input:focus{border-color:var(--amber)}
+.stepRow .stepName{flex:1;min-width:0;font-size:1rem}
+.stepRow .stepMin,.stepRow .stepSec{width:5.5ch;text-align:center;font-size:1rem;padding-left:4px;padding-right:4px}
+.stepRow .colon{font-family:'Chivo Mono',monospace;color:var(--muted)}
+.stepRow .stepDel{background:none;border:none;color:var(--red);font-size:1.05rem;cursor:pointer;padding:6px;flex:0 0 auto}
+.stepRow .stepDel:disabled{color:var(--line);cursor:default}
+
+/* ---------- Multi-step tiles: distinct look + prominent phase banner ---------- */
+/* stepped tiles wear a persistent ember frame so they never read as a plain timer */
+.tile[data-chain="1"]{box-shadow:0 2px 10px rgba(28,33,28,.08), inset 0 0 0 3px var(--ember)}
+.tile .phaseBanner{
+  position:absolute;top:0;left:0;right:0;z-index:3;display:none;
+  align-items:center;justify-content:center;gap:2cqw;
+  background:var(--ember);color:var(--on-accent);
+  font-family:'Chivo Mono',monospace;font-weight:700;
+  font-size:7cqh;line-height:1;letter-spacing:.02em;
+  padding:2.4cqh 3cqw;text-shadow:none;
+}
+.tile[data-chain="1"] .phaseBanner{display:flex}
+.tile .phaseBanner .pc{flex:0 0 auto;background:rgba(255,255,255,.24);border-radius:6px;padding:.5cqh 1.8cqw}
+.tile .phaseBanner .pc:empty{display:none}
+.tile .phaseBanner .pn{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-transform:uppercase}
+.tile[data-chain="1"] .inner{padding-top:15cqh}   /* clear the banner */
+@keyframes stepFlash{
+  0%{box-shadow:0 0 0 0 rgba(232,96,15,.6)}
+  40%{box-shadow:0 0 34px 9px rgba(232,96,15,.45)}
+  100%{box-shadow:0 0 0 0 rgba(232,96,15,0)}
+}
+.tile.stepFlash{animation:stepFlash .75s ease-out}
 </style>
 </head>
 <body>
@@ -269,25 +341,34 @@ body.editing .tile .editBadge{display:block}
 <header>
   <div class="logo"><b>SEZAM<em>·</em>TIMERS</b><span>kitchen</span></div>
   <div class="clock" id="clock"></div>
+  <div id="ver">proto · steps v3</div>
   <div class="spacer"></div>
+  <button class="hbtn" id="langBtn" title="Langue / Language">FR</button>
   <button class="hbtn" id="editBtn">✎ Edit</button>
   <button class="hbtn primary" id="newBtn">+ New</button>
 </header>
 
 <div id="gridWrap">
   <div id="grid"></div>
-  <div id="empty" hidden><div class="big">◷</div><div>No timers yet — tap + NEW</div></div>
+  <div id="empty" hidden><div class="big">◷</div><div data-i18n="emptyTitle">No timers yet — tap + NEW</div></div>
 </div>
 
 <div id="overlay">
   <div id="modal">
     <h2 id="mTitle">New timer</h2>
     <div class="field">
-      <label>Name (shown on tile)</label>
-      <input type="text" id="mName" maxlength="24" placeholder="Fries">
+      <label data-i18n="nameLabel">Name (shown on tile)</label>
+      <input type="text" id="mName" maxlength="24" placeholder="Fries" data-i18n-ph="namePh">
     </div>
     <div class="field">
-      <label>Duration</label>
+      <label data-i18n="typeLabel">Timer type</label>
+      <div class="toneRow" id="mMode">
+        <button type="button" data-mode="single">Single</button>
+        <button type="button" data-mode="chain">Multi-step</button>
+      </div>
+    </div>
+    <div class="field" id="mSingleField">
+      <label data-i18n="durationLabel">Duration</label>
       <div class="durRow">
         <div class="durCol">
           <button data-d="min+">▲</button>
@@ -305,18 +386,23 @@ body.editing .tile .editBadge{display:block}
       </div>
       <div class="presets" id="mPresets"></div>
     </div>
+    <div class="field" id="mChainField" hidden>
+      <label data-i18n="stepsLabel">Steps — each phase counts down; the next phase name is announced</label>
+      <div id="mSteps"></div>
+      <button type="button" id="mAddStep" class="addStep" data-i18n="addStep">+ Add step</button>
+    </div>
     <div class="field">
-      <label>Ringtone (tap to preview)</label>
+      <label data-i18n="ringtoneLabel">Ringtone (tap to preview)</label>
       <div class="toneRow" id="mTones"></div>
     </div>
     <div class="field">
-      <label>Voice announcement (English)</label>
-      <input type="text" id="mPhrase" maxlength="60" placeholder="The fries are ready">
+      <label data-i18n="voiceLabel">Voice announcement</label>
+      <input type="text" id="mPhrase" maxlength="60" placeholder="The fries are ready" data-i18n-ph="voicePh">
     </div>
     <div class="modalBtns">
       <button id="mDelete">🗑</button>
-      <button id="mCancel">Cancel</button>
-      <button id="mSave">Save</button>
+      <button id="mCancel" data-i18n="cancel">Cancel</button>
+      <button id="mSave" data-i18n="save">Save</button>
     </div>
   </div>
 </div>
@@ -329,7 +415,7 @@ const TONES=['Bell','Beep','Chime'];
 const PRESETS=[[0,30],[1,0],[2,0],[3,0],[5,0],[8,0],[10,0],[15,0]];
 // Default timer set. Bumping SEED_VERSION re-applies this list on next load
 // (this REPLACES the current timers — including any added by hand).
-const SEED_VERSION='2';
+const SEED_VERSION='2';   // unchanged → existing installs keep their own timers
 const DEFAULTS=[
   {name:'Fries',            durationSec:240, tone:'Bell',  phrase:'The fries are ready'},
   {name:'Mozza or elastics',durationSec:135, tone:'Beep',  phrase:'The mozza is ready'},
@@ -339,9 +425,46 @@ const DEFAULTS=[
   {name:'Cooking chicken',  durationSec:360, tone:'Chime', phrase:'The cooked chicken is ready'},
   {name:'Donut',            durationSec:90,  tone:'Bell',  phrase:'The donuts are ready'},
 ];
-let timers=[];            // [{id,name,durationSec,tone,phrase}]
+let timers=[];            // [{id,name,durationSec,tone,phrase}] or [{...,steps:[{name,sec}]}]
 let run={};               // {id:{status:'running'|'ringing', endsAt, nextVoiceAt, voiceGap}}
 let editing=false, editingId=null;
+
+/* ================= i18n (FR default, switchable EN) ================= */
+let lang = localStorage.getItem('sezam-lang') || 'fr';
+const TONE_LABELS={ fr:{Bell:'Cloche',Beep:'Bip',Chime:'Carillon'}, en:{Bell:'Bell',Beep:'Beep',Chime:'Chime'} };
+const I18N={
+  fr:{
+    edit:'✎ Éditer', done:'✓ Terminé', new:'＋ Nouveau',
+    emptyTitle:'Aucun timer — appuyez sur ＋ Nouveau',
+    newTimer:'Nouveau timer', editTimer:'Modifier',
+    nameLabel:'Nom (affiché sur la tuile)', namePh:'Frites',
+    typeLabel:'Type de timer', single:'Simple', multi:'Multi-étapes',
+    durationLabel:'Durée',
+    stepsLabel:'Étapes — chaque phase décompte ; le nom de la suivante est annoncé', addStep:'＋ Ajouter une étape',
+    ringtoneLabel:'Sonnerie (appuyez pour écouter)', voiceLabel:'Annonce vocale', voicePh:'Les frites sont prêtes',
+    cancel:'Annuler', save:'Enregistrer',
+    tapStart:'appuyer pour démarrer', tapPause:'appuyer pour pause',
+    paused:'❚❚ en pause · reprendre', tapStop:'appuyer pour arrêter',
+    stepsWord:'étapes',
+  },
+  en:{
+    edit:'✎ Edit', done:'✓ Done', new:'＋ New',
+    emptyTitle:'No timers yet — tap ＋ New',
+    newTimer:'New timer', editTimer:'Edit timer',
+    nameLabel:'Name (shown on tile)', namePh:'Fries',
+    typeLabel:'Timer type', single:'Single', multi:'Multi-step',
+    durationLabel:'Duration',
+    stepsLabel:'Steps — each phase counts down; the next phase name is announced', addStep:'＋ Add step',
+    ringtoneLabel:'Ringtone (tap to preview)', voiceLabel:'Voice announcement', voicePh:'The fries are ready',
+    cancel:'Cancel', save:'Save',
+    tapStart:'tap to start', tapPause:'tap to pause',
+    paused:'❚❚ paused · tap to resume', tapStop:'tap to stop',
+    stepsWord:'steps',
+  },
+};
+const tr=k=>I18N[lang][k];   // NB: not named `t` — that's the timer var in loops
+// Default "ready" announcement when the user leaves the phrase blank.
+const readyPhrase=name=> lang==='fr' ? `${name} est prêt` : `The ${name.toLowerCase()} is ready`;
 
 function load(){
   try{timers=JSON.parse(localStorage.getItem(LS_DEF))||[]}catch(e){timers=[]}
@@ -394,14 +517,15 @@ function playRingtone(name){
 let enVoice=null;
 // Web Speech API exposes no gender field → infer a FEMALE English voice by name.
 // Hints cover Windows (Zira/Aria/Jenny), macOS/iOS (Samantha/Karen/Moira…), Android/Google.
-const FEMALE=/zira|aria|jenny|michelle|\beva\b|hazel|susan|catherine|linda|heera|samantha|karen|moira|tessa|fiona|victoria|allison|\bava\b|vicki|kathy|serena|nicky|\bzoe\b|female|woman|girl/i;
-const MALE=/david|\bmark\b|george|james|daniel|\balex\b|fred|\btom\b|aaron|arthur|gordon|oliver|rishi|ravi|\bguy\b|\bmale\b|\bman\b/i;
+const FEMALE=/zira|aria|jenny|michelle|\beva\b|hazel|susan|catherine|linda|heera|samantha|karen|moira|tessa|fiona|victoria|allison|\bava\b|vicki|kathy|serena|nicky|\bzoe\b|hortense|am[ée]lie|audrey|virginie|c[ée]line|julie|marie|charlotte|female|woman|girl|femme/i;
+const MALE=/david|\bmark\b|george|james|daniel|\balex\b|fred|\btom\b|aaron|arthur|gordon|oliver|rishi|ravi|paul|thomas|nicolas|guillaume|mathieu|henri|\bguy\b|\bmale\b|\bman\b|homme/i;
 function scoreVoice(v){
   let s=0;
-  if(/^en/i.test(v.lang)) s+=10; else s-=100;   // must be English
-  if(/en[-_]US/i.test(v.lang)) s+=3;             // prefer US accent
-  if(FEMALE.test(v.name)) s+=20;                 // prefer female
-  if(MALE.test(v.name)) s-=20;                   // avoid male
+  const pref = lang==='fr' ? /^fr/i : /^en/i;
+  if(pref.test(v.lang)) s+=10; else s-=100;                                   // must match app language
+  if(lang==='fr' ? /fr[-_]FR/i.test(v.lang) : /en[-_]US/i.test(v.lang)) s+=3; // prefer FR-FR / en-US
+  if(FEMALE.test(v.name)) s+=20;                                              // prefer female
+  if(MALE.test(v.name)) s-=20;                                               // avoid male
   if(v.default) s+=1;
   return s;
 }
@@ -424,7 +548,7 @@ function drainSpeech(){
   const done=()=>{ if(myGen!==speechGen) return; speaking=false; currentSpeechId=null; setTimeout(drainSpeech,300); };
   try{
     const u=new SpeechSynthesisUtterance(item.text);
-    u.lang='en-US'; if(enVoice)u.voice=enVoice; u.rate=1; u.volume=1;
+    u.lang = lang==='fr'?'fr-FR':'en-US'; if(enVoice)u.voice=enVoice; u.rate=1; u.volume=1;
     u.onend=done; u.onerror=done;
     speechSynthesis.speak(u);
   }catch(e){ done(); }
@@ -446,8 +570,20 @@ function stopSpeechFor(id){
 
 /* ================= Timer engine ================= */
 const now=()=>Date.now();
+// A timer is "chained" when it carries >=2 named steps; otherwise it's a single duration.
+const isChain=t=>Array.isArray(t.steps)&&t.steps.length>=2;
+const totalSec=t=>isChain(t)?t.steps.reduce((a,s)=>a+(s.sec||0),0):t.durationSec;
+function stepChime(){ // short rising two-note played at each phase transition
+  try{ const c=ac().currentTime; tone(659.25,c,0.16,'sine',.42); tone(987.77,c+0.14,0.22,'sine',.42); }catch(e){}
+}
+function flashTile(id){
+  const el=document.querySelector('.tile[data-id="'+id+'"]'); if(!el)return;
+  el.classList.remove('stepFlash'); void el.offsetWidth; el.classList.add('stepFlash');
+  setTimeout(()=>{ if(el) el.classList.remove('stepFlash'); },800);
+}
 function startTimer(t){
-  run[t.id]={status:'running',endsAt:now()+t.durationSec*1000};
+  if(isChain(t)) run[t.id]={status:'running',chain:1,stepIndex:0,endsAt:now()+t.steps[0].sec*1000};
+  else run[t.id]={status:'running',endsAt:now()+t.durationSec*1000};
   saveRun(); playClick(true); render();
 }
 function stopTimer(id,click=true){
@@ -497,8 +633,30 @@ function tick(){
   const n=now();
   for(const t of timers){
     const r=run[t.id]; if(!r)continue;
-    if(r.status==='running' && n>=r.endsAt) fireAlarm(t);
-    else if(r.status==='ringing' && n>=r.nextVoiceAt) alarmRepeat(t);
+    if(r.status==='running'){
+      if(!(n>=r.endsAt)) continue;
+      if(r.chain){
+        // Advance through every boundary we've crossed (catch-up after sleep),
+        // chaining endsAt from the scheduled boundary so timing stays accurate.
+        let advanced=0;
+        while(r.stepIndex < t.steps.length-1 && n>=r.endsAt){
+          r.stepIndex++; r.endsAt += t.steps[r.stepIndex].sec*1000; advanced++;
+        }
+        if(r.stepIndex >= t.steps.length-1 && n>=r.endsAt){
+          fireAlarm(t);                       // final phase done → full alarm
+        }else if(advanced>0){
+          saveRun();
+          flashTile(t.id); stepChime(); haptic(120);
+          // Announce the phase we just entered — but only a LIVE transition
+          // (skip voice spam when catching up multiple steps after sleep).
+          if(advanced===1) setTimeout(()=>enqueueSpeech(t.id,t.steps[r.stepIndex].name),260);
+        }
+      }else{
+        fireAlarm(t);
+      }
+    }else if(r.status==='ringing' && n>=r.nextVoiceAt){
+      alarmRepeat(t);
+    }
   }
   updateTiles();
 }
@@ -533,7 +691,7 @@ function render(){
   for(const t of timers){
     const el=document.createElement('div');
     el.className='tile'; el.dataset.id=t.id;
-    el.innerHTML=`<div class="inner">
+    el.innerHTML=`<div class="phaseBanner"><span class="pc"></span><span class="pn"></span></div><div class="inner">
       <div class="editBadge">✎ EDIT</div>
       <div class="name"></div>
       <div class="time"></div>
@@ -549,34 +707,44 @@ function render(){
   }
   layout(); updateTiles();
 }
+function fillFor(p){ return p<=0.15?'var(--red-fill)': p<=0.35?'var(--amber-fill)':'var(--mint-fill)'; }
 function updateTiles(){
   const n=now();
   for(const el of grid.children){
     const t=timers.find(x=>x.id===el.dataset.id); if(!t)continue;
     const r=run[t.id];
+    const chain=isChain(t);
     const timeEl=el.querySelector('.time'), subEl=el.querySelector('.sub');
+    const pcEl=el.querySelector('.pc'), pnEl=el.querySelector('.pn');
+    el.dataset.chain=chain?'1':'0';
     if(!r){
       el.dataset.status='idle';
-      timeEl.textContent=fmt(t.durationSec);
-      subEl.textContent='tap to start'; subEl.classList.add('go');
+      if(chain){ pcEl.textContent=''; pnEl.textContent=t.steps.length+' '+tr('stepsWord'); }
+      timeEl.textContent=fmt(totalSec(t));
+      subEl.textContent=tr('tapStart'); subEl.classList.add('go');
     }else if(r.status==='running'){
       el.dataset.status='running';
-      const rem=(r.endsAt-n)/1000, p=Math.min(1,Math.max(0,rem/t.durationSec));
+      const stepDur = r.chain ? t.steps[r.stepIndex].sec : t.durationSec;
+      const rem=(r.endsAt-n)/1000, p=Math.min(1,Math.max(0,rem/stepDur));
       el.style.setProperty('--p',p.toFixed(4));
-      el.style.setProperty('--ring-c', p<=0.15?'var(--red)': p<=0.35?'var(--amber)':'var(--mint)');
+      el.style.setProperty('--fill', fillFor(p));
       timeEl.textContent=fmt(rem);
-      subEl.textContent='tap to pause'; subEl.classList.remove('go');
+      if(r.chain){ pcEl.textContent=(r.stepIndex+1)+'/'+t.steps.length; pnEl.textContent=t.steps[r.stepIndex].name; }
+      subEl.textContent=tr('tapPause'); subEl.classList.remove('go');
     }else if(r.status==='paused'){
       el.dataset.status='paused';
-      const rem=(r.remainingMs||0)/1000, p=Math.min(1,Math.max(0,rem/t.durationSec));
+      const stepDur = r.chain ? t.steps[r.stepIndex].sec : t.durationSec;
+      const rem=(r.remainingMs||0)/1000, p=Math.min(1,Math.max(0,rem/stepDur));
       el.style.setProperty('--p',p.toFixed(4));
-      el.style.setProperty('--ring-c','var(--muted)');
+      el.style.setProperty('--fill','#c9c2b5');
       timeEl.textContent=fmt(rem);
-      subEl.textContent='❚❚ paused · tap to resume'; subEl.classList.remove('go');
+      if(r.chain){ pcEl.textContent=(r.stepIndex+1)+'/'+t.steps.length; pnEl.textContent=t.steps[r.stepIndex].name; }
+      subEl.textContent=tr('paused'); subEl.classList.remove('go');
     }else{
       el.dataset.status='ringing';
+      el.dataset.chain='0';   // hide banner during the red alarm
       timeEl.textContent=fmtUp((n-r.rangAt)/1000);
-      subEl.textContent='tap to stop'; subEl.classList.remove('go');
+      subEl.textContent=tr('tapStop'); subEl.classList.remove('go');
     }
   }
 }
@@ -628,7 +796,12 @@ grid.addEventListener('pointermove',e=>{
   if(!drag.moved && Math.hypot(dx,dy)>12){drag.moved=true;drag.tile.classList.add('dragging')}
   if(!drag.moved)return;
   drag.tile.style.transform=`translate(${dx}px,${dy}px) scale(1.05)`;
+  // The dragged tile sits under the finger — exclude it from hit-testing so we
+  // can detect the tile BENEATH it (otherwise elementFromPoint returns itself
+  // and no drop target is ever found).
+  drag.tile.style.pointerEvents='none';
   const under=document.elementFromPoint(e.clientX,e.clientY);
+  drag.tile.style.pointerEvents='';
   const target=under && under.closest('.tile');
   grid.querySelectorAll('.dropTarget').forEach(x=>x.classList.remove('dropTarget'));
   if(target && target!==drag.tile){target.classList.add('dropTarget');drag.over=target.dataset.id}
@@ -637,13 +810,19 @@ grid.addEventListener('pointermove',e=>{
 grid.addEventListener('pointerup',e=>{
   if(!drag)return;
   const{tile,id,over,moved}=drag;
-  tile.classList.remove('dragging');tile.style.transform='';
+  tile.classList.remove('dragging');tile.style.transform='';tile.style.pointerEvents='';
   grid.querySelectorAll('.dropTarget').forEach(x=>x.classList.remove('dropTarget'));
   if(moved&&over&&over!==id){
     const from=timers.findIndex(t=>t.id===id), to=timers.findIndex(t=>t.id===over);
     const[m]=timers.splice(from,1);timers.splice(to,0,m);
     saveDefs();playClick(true);render();
   }
+  drag=null;
+});
+grid.addEventListener('pointercancel',()=>{
+  if(!drag)return;
+  drag.tile.classList.remove('dragging');drag.tile.style.transform='';drag.tile.style.pointerEvents='';
+  grid.querySelectorAll('.dropTarget').forEach(x=>x.classList.remove('dropTarget'));
   drag=null;
 });
 
@@ -653,7 +832,7 @@ editBtn.addEventListener('click',()=>{
   editing=!editing;
   document.body.classList.toggle('editing',editing);
   editBtn.classList.toggle('active',editing);
-  editBtn.textContent=editing?'✓ Done':'✎ Edit';
+  editBtn.textContent=editing?tr('done'):tr('edit');
   playClick(editing);
 });
 
@@ -666,11 +845,11 @@ const mName=document.getElementById('mName'),mMin=document.getElementById('mMin'
 let mTone='Bell';
 
 TONES.forEach(name=>{
-  const b=document.createElement('button');b.textContent=name;
+  const b=document.createElement('button');b.dataset.tone=name;b.textContent=TONE_LABELS[lang][name];
   b.addEventListener('click',()=>{mTone=name;syncTones();playRingtone(name)});
   mTones.appendChild(b);
 });
-function syncTones(){[...mTones.children].forEach(b=>b.classList.toggle('sel',b.textContent===mTone))}
+function syncTones(){[...mTones.children].forEach(b=>b.classList.toggle('sel',b.dataset.tone===mTone))}
 PRESETS.forEach(([m,s])=>{
   const b=document.createElement('button');b.textContent=s?`${m}:${String(s).padStart(2,'0')}`:`${m} min`;
   b.addEventListener('click',()=>{mMin.textContent=m;mSec.textContent=String(s).padStart(2,'0');syncPresets()});
@@ -689,15 +868,68 @@ document.querySelectorAll('[data-d]').forEach(b=>b.addEventListener('click',()=>
   mMin.textContent=m;mSec.textContent=String(s).padStart(2,'0');syncPresets();
 }));
 
+/* ----- Multi-step (chain) editor ----- */
+let mMode='single', mStepList=[];
+const mModeRow=document.getElementById('mMode'),
+      mSingleField=document.getElementById('mSingleField'),
+      mChainField=document.getElementById('mChainField'),
+      mStepsEl=document.getElementById('mSteps');
+function setMode(mode){
+  mMode=mode;
+  [...mModeRow.children].forEach(b=>b.classList.toggle('sel',b.dataset.mode===mode));
+  mSingleField.hidden = mode!=='single';
+  mChainField.hidden  = mode!=='chain';
+  if(mode==='chain' && mStepList.length===0){
+    mStepList=[{name:'Sear',sec:120},{name:'Rest',sec:60}]; renderSteps();
+  }
+}
+[...mModeRow.children].forEach(b=>b.addEventListener('click',()=>{setMode(b.dataset.mode);playClick(true)}));
+function renderSteps(){
+  mStepsEl.innerHTML='';
+  mStepList.forEach((s,i)=>{
+    const row=document.createElement('div'); row.className='stepRow';
+    const mn=Math.floor(s.sec/60), sc=s.sec%60;
+    row.innerHTML=`<span class="stepNum">${i+1}</span>
+      <input class="stepName" maxlength="16" placeholder="Phase" value="${(s.name||'').replace(/"/g,'&quot;')}">
+      <input class="stepMin" inputmode="numeric" maxlength="3" value="${mn}">
+      <span class="colon">:</span>
+      <input class="stepSec" inputmode="numeric" maxlength="2" value="${String(sc).padStart(2,'0')}">
+      <button type="button" class="stepDel" title="Remove"${mStepList.length<=2?' disabled':''}>✕</button>`;
+    row.querySelector('.stepName').addEventListener('input',e=>{s.name=e.target.value});
+    const commit=()=>{
+      const mm=parseInt(row.querySelector('.stepMin').value,10)||0;
+      let ss=parseInt(row.querySelector('.stepSec').value,10)||0; ss=Math.min(59,Math.max(0,ss));
+      s.sec=Math.max(5,mm*60+ss);
+    };
+    row.querySelector('.stepMin').addEventListener('input',commit);
+    row.querySelector('.stepSec').addEventListener('input',commit);
+    row.querySelector('.stepDel').addEventListener('click',()=>{
+      if(mStepList.length<=2)return; mStepList.splice(i,1); renderSteps(); playClick(false);
+    });
+    mStepsEl.appendChild(row);
+  });
+}
+document.getElementById('mAddStep').addEventListener('click',()=>{
+  mStepList.push({name:'Step',sec:60}); renderSteps(); playClick(true);
+});
+
 function openModal(t){
   editingId=t?t.id:null;
-  mTitle.textContent=t?'Edit timer':'New timer';
+  mTitle.textContent=t?tr('editTimer'):tr('newTimer');
   mName.value=t?t.name:'';
-  const d=t?t.durationSec:180;
-  mMin.textContent=Math.floor(d/60);mSec.textContent=String(d%60).padStart(2,'0');
   mTone=t?t.tone:'Bell';
   mPhrase.value=t?t.phrase:'';
   mDelete.style.display=t?'':'none';
+  if(t && isChain(t)){
+    mStepList=t.steps.map(s=>({name:s.name,sec:s.sec}));
+    mMin.textContent=3;mSec.textContent='00';
+    setMode('chain'); renderSteps();
+  }else{
+    const d=t?t.durationSec:180;
+    mMin.textContent=Math.floor(d/60);mSec.textContent=String(d%60).padStart(2,'0');
+    mStepList=[];
+    setMode('single');
+  }
   syncTones();syncPresets();
   overlay.classList.add('open');
   if(!t)setTimeout(()=>mName.focus(),100);
@@ -708,16 +940,24 @@ document.getElementById('mCancel').addEventListener('click',closeModal);
 document.getElementById('newBtn').addEventListener('click',()=>openModal(null));
 document.getElementById('mSave').addEventListener('click',()=>{
   const name=mName.value.trim()||'Timer';
-  const dur=Math.max(5,(+mMin.textContent)*60+(+mSec.textContent));
-  const phrase=mPhrase.value.trim()||`The ${name.toLowerCase()} is ready`;
+  const phrase=mPhrase.value.trim()||readyPhrase(name);
+  let patch;
+  if(mMode==='chain'){
+    const steps=mStepList.map(s=>({name:(s.name||'Step').trim()||'Step',sec:Math.max(5,s.sec||5)}));
+    patch={name,steps,durationSec:steps.reduce((a,s)=>a+s.sec,0),tone:mTone,phrase};
+  }else{
+    const dur=Math.max(5,(+mMin.textContent)*60+(+mSec.textContent));
+    patch={name,durationSec:dur,tone:mTone,phrase};
+  }
   if(editingId){
     const t=timers.find(x=>x.id===editingId);
-    Object.assign(t,{name,durationSec:dur,tone:mTone,phrase});
-    if(run[t.id]&&run[t.id].status==='running'){/* keep running, duration applies next run */}
+    if(mMode!=='chain') delete t.steps;   // switching chain → single clears old phases
+    delete run[t.id];                      // reset any run state so it matches the new shape
+    Object.assign(t,patch);
   }else{
-    timers.push({id:uid(),name,durationSec:dur,tone:mTone,phrase});
+    timers.push({id:uid(),...patch});
   }
-  saveDefs();playClick(true);closeModal();render();
+  saveDefs();saveRun();playClick(true);closeModal();render();
 });
 mDelete.addEventListener('click',()=>{
   if(!editingId)return;
@@ -737,6 +977,24 @@ wakeLock();
 const clockEl=document.getElementById('clock');
 setInterval(()=>{clockEl.textContent=new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})},1000);
 
+/* ================= Language switch ================= */
+const langBtn=document.getElementById('langBtn');
+function applyStatic(){
+  document.querySelectorAll('[data-i18n]').forEach(el=>{ el.textContent=tr(el.dataset.i18n); });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{ el.placeholder=tr(el.dataset.i18nPh); });
+  editBtn.textContent = editing?tr('done'):tr('edit');
+  newBtn.textContent  = tr('new');
+  langBtn.textContent = lang.toUpperCase();
+  [...mModeRow.children].forEach(b=>{ b.textContent = b.dataset.mode==='single'?tr('single'):tr('multi'); });
+  [...mTones.children].forEach(b=>{ b.textContent = TONE_LABELS[lang][b.dataset.tone]; });
+}
+langBtn.addEventListener('click',()=>{
+  lang = lang==='fr'?'en':'fr';
+  localStorage.setItem('sezam-lang',lang);
+  pickVoice(); applyStatic(); render(); playClick(true);
+  if(overlay.classList.contains('open')) mTitle.textContent = editingId?tr('editTimer'):tr('newTimer');
+});
+
 /* ================= Boot ================= */
 load();
 // Ship the app with the default timer set. Applied on a fresh device, or once
@@ -749,6 +1007,26 @@ if(localStorage.getItem('sezam-timers-seed-ver')!==SEED_VERSION){
   localStorage.setItem('sezam-timers-seed-ver',SEED_VERSION);
   saveDefs(); saveRun();
 }
+// One-time, NON-destructive: surface the chained "Steak" demo on existing installs
+// (which kept their own timers above) so the multi-step feature is visible without
+// wiping anything. Skips if a chained timer already exists.
+if(!localStorage.getItem('sezam-steak-demo-v2')){
+  // Replace the earlier English-only demo (untouched auto-seed, matched by name)
+  // with a localized one so the spoken cues match the app language.
+  timers = timers.filter(t=> !(Array.isArray(t.steps) && t.name==='Steak · med-rare'));
+  if(!timers.some(t=>Array.isArray(t.steps)&&t.steps.length>=2)){
+    const demo = lang==='fr'
+      ? {name:'Steak · saignant', phrase:'Le steak est prêt à dresser',
+         steps:[{name:'Saisir',sec:120},{name:'Retourner',sec:120},{name:'Repos',sec:300}]}
+      : {name:'Steak · med-rare', phrase:'The steak is ready to plate',
+         steps:[{name:'Sear',sec:120},{name:'Flip',sec:120},{name:'Rest',sec:300}]};
+    timers.unshift({id:uid(),tone:'Bell',...demo});
+  }
+  saveDefs();
+  localStorage.removeItem('sezam-steak-demo-v1');
+  localStorage.setItem('sezam-steak-demo-v2','1');
+}
+applyStatic();
 render();
 
 /* Register the service worker (offline shell + installability). Relative path
