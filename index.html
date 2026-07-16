@@ -341,7 +341,7 @@ body.editing .tile .editBadge{display:block}
 <header>
   <div class="logo"><b>SEZAM<em>·</em>TIMERS</b><span>kitchen</span></div>
   <div class="clock" id="clock"></div>
-  <div id="ver">proto · steps v3</div>
+  <div id="ver">proto · steps v4</div>
   <div class="spacer"></div>
   <button class="hbtn" id="langBtn" title="Langue / Language">FR</button>
   <button class="hbtn" id="editBtn">✎ Edit</button>
@@ -890,7 +890,7 @@ function renderSteps(){
     const row=document.createElement('div'); row.className='stepRow';
     const mn=Math.floor(s.sec/60), sc=s.sec%60;
     row.innerHTML=`<span class="stepNum">${i+1}</span>
-      <input class="stepName" maxlength="16" placeholder="Phase" value="${(s.name||'').replace(/"/g,'&quot;')}">
+      <input class="stepName" maxlength="60" placeholder="Phase" value="${(s.name||'').replace(/"/g,'&quot;')}">
       <input class="stepMin" inputmode="numeric" maxlength="3" value="${mn}">
       <span class="colon">:</span>
       <input class="stepSec" inputmode="numeric" maxlength="2" value="${String(sc).padStart(2,'0')}">
