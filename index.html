@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#f4efe4">
-<title>Cadence — Minuteur cuisine pro</title>
+<title>Cadence — Kitchen Timer</title>
 <link rel="manifest" href="manifest.webmanifest">
 <!-- iOS home-screen (Safari ignores the manifest for these) -->
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -68,7 +68,8 @@ header{
 .logo{display:flex;align-items:center;gap:9px}
 .logo .logo-mark{width:28px;height:28px;flex:none}
 .logo .wm{display:flex;flex-direction:column;line-height:1;gap:2px}
-.logo b{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:1.4rem;letter-spacing:.01em;color:var(--text);text-transform:none}
+.logo b{font-family:'Big Shoulders Display',sans-serif;font-weight:800;font-size:1.4rem;letter-spacing:.01em;color:var(--text);text-transform:none;white-space:nowrap}
+.logo b em{font-style:normal;font-weight:700;color:var(--muted)}
 .logo span{font-family:'Chivo Mono',monospace;font-size:.56rem;color:var(--muted);letter-spacing:.18em;text-transform:uppercase}
 .clock{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-family:'Chivo Mono',monospace;font-size:.85rem;color:var(--muted)}
 header .spacer{flex:1}
@@ -341,7 +342,7 @@ body.editing .tile .editBadge{display:block}
       <path d="M16 19.5 V8.5 A11 11 0 0 1 23.78 27.28 Z" fill="#e8600f"/>
       <circle cx="16" cy="19.5" r="1.9" fill="currentColor"/>
     </svg>
-    <span class="wm"><b>Cadence</b><span>minuteur cuisine pro</span></span>
+    <span class="wm"><b>Cadence <em>— Kitchen Timer</em></b></span>
   </div>
   <div class="clock" id="clock"></div>
   <div class="spacer"></div>
