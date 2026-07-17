@@ -301,6 +301,29 @@ body.editing .tile .editBadge{display:block}
 .stepRow .stepDel{background:none;border:none;color:var(--red);font-size:1.05rem;cursor:pointer;padding:6px;flex:0 0 auto}
 .stepRow .stepDel:disabled{color:var(--line);cursor:default}
 
+/* ---------- Zones ---------- */
+#zonesOverlay{position:fixed;inset:0;z-index:60;background:rgba(20,22,15,.55);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;padding:20px}
+#zonesOverlay.open{display:flex}
+#zonesModal{width:min(560px,100%);max-height:92vh;overflow-y:auto;background:var(--panel-2);border:1px solid var(--line);border-radius:20px;padding:26px 26px 22px;box-shadow:0 24px 60px rgba(28,33,28,.25)}
+#zonesModal h2{font-weight:800;font-size:1.6rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;display:flex;align-items:center;gap:10px}
+#zonesModal h2::before{content:'';width:10px;height:26px;background:var(--ember);border-radius:3px}
+.zonesHint{font-family:'Chivo Mono',monospace;font-size:.72rem;color:var(--muted);margin:0 0 18px;line-height:1.5}
+.zoneRow{display:flex;align-items:center;gap:8px;margin-bottom:8px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:8px 10px}
+.zSw{width:26px;height:26px;border-radius:50%;border:2px solid rgba(255,255,255,.6);cursor:pointer;flex:0 0 auto;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.zName{flex:1;min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:'Big Shoulders Display',sans-serif;font-weight:700;font-size:1.05rem;padding:9px 10px;outline:none}
+.zName:focus{border-color:var(--amber)}
+.zSound{background:var(--panel);border:1px solid var(--line);border-radius:8px;color:var(--text);font-family:'Chivo Mono',monospace;font-size:.8rem;padding:8px 6px;cursor:pointer;flex:0 0 auto;max-width:10ch}
+.zPlay{width:34px;height:34px;border-radius:8px;border:1px solid var(--line);background:var(--panel);color:var(--ember);font-size:.9rem;cursor:pointer;flex:0 0 auto}
+.zPlay:active{background:var(--panel-2)}
+.zDel{background:none;border:none;color:var(--red);font-size:1.05rem;cursor:pointer;padding:6px;flex:0 0 auto}
+#zClose{background:var(--ember);border-color:var(--ember);color:var(--on-accent)}
+.zdot{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:7px;vertical-align:middle;box-shadow:0 0 0 1px rgba(0,0,0,.15)}
+.toneRow{flex-wrap:wrap}
+#mZones button{flex:0 1 auto}
+.tile .zoneChip{align-self:center;margin-top:.6cqh;max-width:86%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-family:'Chivo Mono',monospace;font-weight:600;font-size:2.6cqh;letter-spacing:.04em;text-transform:uppercase;
+  color:#fff;padding:.5cqh 2cqw;border-radius:999px;line-height:1.1}
+
 /* ---------- Multi-step tiles: distinct look + prominent phase banner ---------- */
 /* stepped tiles wear a persistent ember frame so they never read as a plain timer */
 .tile[data-chain="1"]{box-shadow:0 2px 10px rgba(28,33,28,.08), inset 0 0 0 3px var(--ember)}
@@ -347,6 +370,7 @@ body.editing .tile .editBadge{display:block}
   <div class="clock" id="clock"></div>
   <div class="spacer"></div>
   <button class="hbtn" id="langBtn" title="Langue / Language">FR</button>
+  <button class="hbtn" id="zonesBtn" title="Zones">Zones</button>
   <button class="hbtn" id="editBtn">✎ Edit</button>
   <button class="hbtn primary" id="newBtn">+ New</button>
 </header>
@@ -395,8 +419,8 @@ body.editing .tile .editBadge{display:block}
       <button type="button" id="mAddStep" class="addStep" data-i18n="addStep">+ Add step</button>
     </div>
     <div class="field">
-      <label data-i18n="ringtoneLabel">Ringtone (tap to preview)</label>
-      <div class="toneRow" id="mTones"></div>
+      <label data-i18n="zoneLabel">Zone (donne la sonnerie)</label>
+      <div class="toneRow" id="mZones"></div>
     </div>
     <div class="field">
       <label data-i18n="voiceLabel">Voice announcement</label>
@@ -410,11 +434,24 @@ body.editing .tile .editBadge{display:block}
   </div>
 </div>
 
+<div id="zonesOverlay">
+  <div id="zonesModal">
+    <h2 data-i18n="zonesTitle">Zones</h2>
+    <p class="zonesHint" data-i18n="zonesHint">Chaque zone a sa propre sonnerie. Un timer choisit sa zone.</p>
+    <div id="zonesList"></div>
+    <button type="button" id="zAdd" class="addStep" data-i18n="addZone">＋ Ajouter une zone</button>
+    <div class="modalBtns">
+      <button id="zClose" data-i18n="close">Fermer</button>
+    </div>
+  </div>
+</div>
+
 <script>
 'use strict';
 /* ================= Data ================= */
-const LS_DEF='sezam-timers-v1', LS_RUN='sezam-timers-run-v1';
-const TONES=['Bell','Beep','Chime'];
+const LS_DEF='sezam-timers-v1', LS_RUN='sezam-timers-run-v1', LS_ZONES='sezam-zones-v1';
+const TONES=['Bell','Beep','Chime','Ping','Buzz','Marimba'];   // available ringtones (assigned per ZONE)
+const ZONE_COLORS=['#e8600f','#3d7f8c','#dd9207','#0fa96a','#2f6f9e','#b0483a'];
 const PRESETS=[[0,30],[1,0],[2,0],[3,0],[5,0],[8,0],[10,0],[15,0]];
 // Default timer set. Bumping SEED_VERSION re-applies this list on next load
 // (this REPLACES the current timers — including any added by hand).
@@ -428,13 +465,14 @@ const DEFAULTS=[
   {name:'Cooking chicken',  durationSec:360, tone:'Chime', phrase:'The cooked chicken is ready'},
   {name:'Donut',            durationSec:90,  tone:'Bell',  phrase:'The donuts are ready'},
 ];
-let timers=[];            // [{id,name,durationSec,tone,phrase}] or [{...,steps:[{name,sec}]}]
+let timers=[];            // [{id,name,durationSec,zoneId,phrase}] or [{...,steps:[{name,sec}]}] (legacy: tone)
+let zones=[];             // [{id,name,sound,color}] — the alarm SOUND belongs to the zone, not the timer
 let run={};               // {id:{status:'running'|'ringing', endsAt, nextVoiceAt, voiceGap}}
 let editing=false, editingId=null;
 
 /* ================= i18n (FR default, switchable EN) ================= */
 let lang = localStorage.getItem('sezam-lang') || 'fr';
-const TONE_LABELS={ fr:{Bell:'Cloche',Beep:'Bip',Chime:'Carillon'}, en:{Bell:'Bell',Beep:'Beep',Chime:'Chime'} };
+const TONE_LABELS={ fr:{Bell:'Cloche',Beep:'Bip',Chime:'Carillon',Ping:'Ping',Buzz:'Buzzer',Marimba:'Marimba'}, en:{Bell:'Bell',Beep:'Beep',Chime:'Chime',Ping:'Ping',Buzz:'Buzzer',Marimba:'Marimba'} };
 const I18N={
   fr:{
     edit:'✎ Éditer', done:'✓ Terminé', new:'＋ Nouveau',
@@ -449,6 +487,9 @@ const I18N={
     tapStart:'démarrer', tapPause:'appuyer pour pause',
     paused:'❚❚ reprendre', tapStop:'appuyer pour arrêter',
     stepsWord:'étapes',
+    zonesTitle:'Zones', zonesHint:'Chaque zone a sa propre sonnerie. Un timer choisit juste sa zone.',
+    addZone:'＋ Ajouter une zone', close:'Fermer', zoneLabel:'Zone (donne la sonnerie)',
+    noZone:'Aucune', soundWord:'Sonnerie',
   },
   en:{
     edit:'✎ Edit', done:'✓ Done', new:'＋ New',
@@ -463,6 +504,9 @@ const I18N={
     tapStart:'tap to start', tapPause:'tap to pause',
     paused:'❚❚ tap to resume', tapStop:'tap to stop',
     stepsWord:'steps',
+    zonesTitle:'Zones', zonesHint:'Each zone has its own ringtone. A timer just picks its zone.',
+    addZone:'＋ Add zone', close:'Close', zoneLabel:'Zone (sets the ringtone)',
+    noZone:'None', soundWord:'Ringtone',
   },
 };
 const tr=k=>I18N[lang][k];   // NB: not named `t` — that's the timer var in loops
@@ -471,6 +515,7 @@ const readyPhrase=name=> lang==='fr' ? `${name} est prêt` : `The ${name.toLower
 
 function load(){
   try{timers=JSON.parse(localStorage.getItem(LS_DEF))||[]}catch(e){timers=[]}
+  try{zones=JSON.parse(localStorage.getItem(LS_ZONES))||[]}catch(e){zones=[]}
   try{run=JSON.parse(localStorage.getItem(LS_RUN))||{}}catch(e){run={}}
   // reconcile stale run entries
   const ids=new Set(timers.map(t=>t.id));
@@ -478,7 +523,12 @@ function load(){
 }
 function saveDefs(){localStorage.setItem(LS_DEF,JSON.stringify(timers))}
 function saveRun(){localStorage.setItem(LS_RUN,JSON.stringify(run))}
+function saveZones(){localStorage.setItem(LS_ZONES,JSON.stringify(zones))}
 const uid=()=>Math.random().toString(36).slice(2,10);
+// The alarm SOUND is resolved from the timer's ZONE. Legacy timers (with a `tone`
+// and no zone) keep their old sound as a fallback, so nothing changes for them.
+const zoneById=id=>zones.find(z=>z.id===id)||null;
+const soundFor=t=>{ const z=zoneById(t.zoneId); return (z&&z.sound) || t.tone || 'Bell'; };
 
 /* ================= Audio ================= */
 let AC=null, speechReady=false;
@@ -512,9 +562,12 @@ function playClick(up=true){
 function playRingtone(name){
   try{
     const t=ac().currentTime;
-    if(name==='Beep'){ [0,.22,.44].forEach(d=>tone(1050,t+d,0.14,'square',.5)); }
-    else if(name==='Chime'){ [[523.25,0],[659.25,.18],[783.99,.36]].forEach(([f,d])=>tone(f,t+d,0.5,'sine',.45)); }
-    else { /* Bell */ tone(880,t,0.9,'sine',.55); tone(1760,t,0.5,'sine',.2); tone(880,t+.55,0.9,'sine',.45); tone(1760,t+.55,0.5,'sine',.15); }
+    if(name==='Beep'){ [0,.22,.44].forEach(d=>tone(1050,t+d,0.14,'square',.5)); }                                   // mid, sharp triple
+    else if(name==='Chime'){ [[523.25,0],[659.25,.18],[783.99,.36]].forEach(([f,d])=>tone(f,t+d,0.5,'sine',.45)); }  // soft rising arpeggio
+    else if(name==='Ping'){ tone(1568,t,0.13,'sine',.5); tone(2093,t+.12,0.16,'sine',.42); tone(2093,t+.30,0.16,'sine',.34); } // very high, bright
+    else if(name==='Buzz'){ [0,.2,.4].forEach(d=>tone(185,t+d,0.16,'sawtooth',.34)); }                              // low, harsh buzzer
+    else if(name==='Marimba'){ [[440,0],[554.37,.13],[659.25,.26]].forEach(([f,d])=>tone(f,t+d,0.34,'triangle',.5)); } // woody, warm
+    else { /* Bell */ tone(880,t,0.9,'sine',.55); tone(1760,t,0.5,'sine',.2); tone(880,t+.55,0.9,'sine',.45); tone(1760,t+.55,0.5,'sine',.15); } // resonant double
   }catch(e){}
 }
 let enVoice=null;
@@ -618,14 +671,14 @@ function fireAlarm(t){
   r.voiceGap=7000;            // first repeat after ~7s
   r.nextVoiceAt=now()+r.voiceGap;
   saveRun();
-  playRingtone(t.tone);
+  playRingtone(soundFor(t));
   setTimeout(()=>enqueueSpeech(t.id,t.phrase||t.name+' ready'),900);
   haptic([200,100,200]);
   render();
 }
 function alarmRepeat(t){
   const r=run[t.id]; if(!r||r.status!=='ringing')return;
-  playRingtone(t.tone);
+  playRingtone(soundFor(t));
   setTimeout(()=>enqueueSpeech(t.id,t.phrase||t.name+' ready'),700);
   haptic([150,80,150]);
   r.voiceGap=Math.max(2000, r.voiceGap*0.72);  // escalate
@@ -697,6 +750,7 @@ function render(){
     el.innerHTML=`<div class="phaseBanner"><span class="pc"></span><span class="pn"></span></div><div class="inner">
       <div class="editBadge">✎ EDIT</div>
       <div class="name"></div>
+      <div class="zoneChip" hidden></div>
       <div class="time"></div>
       <div class="sub"></div>
       <div class="tctl">
@@ -731,6 +785,8 @@ function updateTiles(){
     const timeEl=el.querySelector('.time'), subEl=el.querySelector('.sub');
     const pcEl=el.querySelector('.pc'), pnEl=el.querySelector('.pn');
     el.dataset.chain=chain?'1':'0';
+    const zc=el.querySelector('.zoneChip'), z=zoneById(t.zoneId);
+    if(z){ zc.textContent=z.name; zc.style.background=z.color; zc.hidden=false; } else { zc.hidden=true; }
     if(!r){
       el.dataset.status='idle';
       if(chain){ pcEl.textContent=''; pnEl.textContent=t.steps.length+' '+tr('stepsWord'); }
@@ -842,6 +898,7 @@ grid.addEventListener('pointercancel',()=>{
 
 /* ================= Edit mode ================= */
 const editBtn=document.getElementById('editBtn');
+const zonesBtn=document.getElementById('zonesBtn');
 editBtn.addEventListener('click',()=>{
   editing=!editing;
   document.body.classList.toggle('editing',editing);
@@ -854,16 +911,27 @@ editBtn.addEventListener('click',()=>{
 const overlay=document.getElementById('overlay');
 const mName=document.getElementById('mName'),mMin=document.getElementById('mMin'),mSec=document.getElementById('mSec'),
       mPhrase=document.getElementById('mPhrase'),mTitle=document.getElementById('mTitle'),
-      mTones=document.getElementById('mTones'),mPresets=document.getElementById('mPresets'),
+      mZones=document.getElementById('mZones'),mPresets=document.getElementById('mPresets'),
       mDelete=document.getElementById('mDelete');
-let mTone='Bell';
+let mZoneId=null;
 
-TONES.forEach(name=>{
-  const b=document.createElement('button');b.dataset.tone=name;b.textContent=TONE_LABELS[lang][name];
-  b.addEventListener('click',()=>{mTone=name;syncTones();playRingtone(name)});
-  mTones.appendChild(b);
-});
-function syncTones(){[...mTones.children].forEach(b=>b.classList.toggle('sel',b.dataset.tone===mTone))}
+// The timer's modal picks a ZONE (which carries the sound), not a tone.
+function buildZoneChips(){
+  mZones.innerHTML='';
+  const none=document.createElement('button'); none.type='button'; none.dataset.zone='';
+  none.textContent=tr('noZone');
+  none.addEventListener('click',()=>{ mZoneId=null; syncZones(); });
+  mZones.appendChild(none);
+  zones.forEach(z=>{
+    const b=document.createElement('button'); b.type='button'; b.dataset.zone=z.id;
+    const dot=document.createElement('span'); dot.className='zdot'; dot.style.background=z.color;
+    b.appendChild(dot); b.appendChild(document.createTextNode(z.name));
+    b.addEventListener('click',()=>{ mZoneId=z.id; syncZones(); playRingtone(z.sound); });
+    mZones.appendChild(b);
+  });
+  syncZones();
+}
+function syncZones(){ [...mZones.children].forEach(b=>b.classList.toggle('sel',(b.dataset.zone||null)===(mZoneId||null))); }
 PRESETS.forEach(([m,s])=>{
   const b=document.createElement('button');b.textContent=s?`${m}:${String(s).padStart(2,'0')}`:`${m} min`;
   b.addEventListener('click',()=>{mMin.textContent=m;mSec.textContent=String(s).padStart(2,'0');syncPresets()});
@@ -931,7 +999,7 @@ function openModal(t){
   editingId=t?t.id:null;
   mTitle.textContent=t?tr('editTimer'):tr('newTimer');
   mName.value=t?t.name:'';
-  mTone=t?t.tone:'Bell';
+  mZoneId = t ? (t.zoneId ?? null) : null;
   mPhrase.value=t?t.phrase:'';
   mDelete.style.display=t?'':'none';
   if(t && isChain(t)){
@@ -944,7 +1012,7 @@ function openModal(t){
     mStepList=[];
     setMode('single');
   }
-  syncTones();syncPresets();
+  buildZoneChips();syncPresets();
   overlay.classList.add('open');
   if(!t)setTimeout(()=>mName.focus(),100);
 }
@@ -958,16 +1026,16 @@ document.getElementById('mSave').addEventListener('click',()=>{
   let patch;
   if(mMode==='chain'){
     const steps=mStepList.map(s=>({name:(s.name||'Step').trim()||'Step',sec:Math.max(5,s.sec||5)}));
-    patch={name,steps,durationSec:steps.reduce((a,s)=>a+s.sec,0),tone:mTone,phrase};
+    patch={name,steps,durationSec:steps.reduce((a,s)=>a+s.sec,0),zoneId:mZoneId,phrase};
   }else{
     const dur=Math.max(5,(+mMin.textContent)*60+(+mSec.textContent));
-    patch={name,durationSec:dur,tone:mTone,phrase};
+    patch={name,durationSec:dur,zoneId:mZoneId,phrase};
   }
   if(editingId){
     const t=timers.find(x=>x.id===editingId);
     if(mMode!=='chain') delete t.steps;   // switching chain → single clears old phases
     delete run[t.id];                      // reset any run state so it matches the new shape
-    Object.assign(t,patch);
+    Object.assign(t,patch); delete t.tone; // zones now govern the sound; drop legacy tone
   }else{
     timers.push({id:uid(),...patch});
   }
@@ -979,6 +1047,41 @@ mDelete.addEventListener('click',()=>{
   timers=timers.filter(t=>t.id!==editingId);
   delete run[editingId];
   saveDefs();saveRun();playClick(false);closeModal();render();
+});
+
+/* ================= Zones manager ================= */
+const zonesOverlay=document.getElementById('zonesOverlay');
+const zonesList=document.getElementById('zonesList');
+function openZones(){ renderZones(); zonesOverlay.classList.add('open'); }
+function closeZones(){ zonesOverlay.classList.remove('open'); }
+function renderZones(){
+  zonesList.innerHTML='';
+  zones.forEach((z,i)=>{
+    const row=document.createElement('div'); row.className='zoneRow';
+    const sw=document.createElement('button'); sw.type='button'; sw.className='zSw'; sw.style.background=z.color; sw.title='Couleur';
+    sw.addEventListener('click',()=>{ z.color=ZONE_COLORS[(ZONE_COLORS.indexOf(z.color)+1)%ZONE_COLORS.length]; sw.style.background=z.color; saveZones(); render(); });
+    const nm=document.createElement('input'); nm.className='zName'; nm.maxLength=18; nm.value=z.name;
+    nm.addEventListener('input',()=>{ z.name=nm.value; saveZones(); render(); });
+    const sel=document.createElement('select'); sel.className='zSound'; sel.title='Sonnerie';
+    TONES.forEach(s=>{ const o=document.createElement('option'); o.value=s; o.textContent=TONE_LABELS[lang][s]; if(s===z.sound)o.selected=true; sel.appendChild(o); });
+    sel.addEventListener('change',()=>{ z.sound=sel.value; saveZones(); playRingtone(z.sound); });
+    const pv=document.createElement('button'); pv.type='button'; pv.className='zPlay'; pv.textContent='▶'; pv.title='Écouter';
+    pv.addEventListener('click',()=>playRingtone(z.sound));
+    const del=document.createElement('button'); del.type='button'; del.className='zDel'; del.textContent='✕'; del.title='Supprimer';
+    del.addEventListener('click',()=>{
+      timers.forEach(t=>{ if(t.zoneId===z.id) t.zoneId=null; });   // un-assign, keeps timers intact
+      zones.splice(i,1); saveZones(); saveDefs(); renderZones(); render();
+    });
+    row.append(sw,nm,sel,pv,del);
+    zonesList.appendChild(row);
+  });
+}
+zonesBtn.addEventListener('click',()=>{ openZones(); playClick(true); });
+document.getElementById('zClose').addEventListener('click',closeZones);
+zonesOverlay.addEventListener('click',e=>{ if(e.target===zonesOverlay) closeZones(); });
+document.getElementById('zAdd').addEventListener('click',()=>{
+  zones.push({id:uid(), name: lang==='fr'?'Nouvelle zone':'New zone', sound:TONES[zones.length%TONES.length], color:ZONE_COLORS[zones.length%ZONE_COLORS.length]});
+  saveZones(); renderZones(); render(); playClick(true);
 });
 
 /* ================= Wake lock & clock ================= */
@@ -1001,7 +1104,8 @@ function applyStatic(){
   newBtn.textContent  = tr('new');
   langBtn.textContent = lang.toUpperCase();
   [...mModeRow.children].forEach(b=>{ b.textContent = b.dataset.mode==='single'?tr('single'):tr('multi'); });
-  [...mTones.children].forEach(b=>{ b.textContent = TONE_LABELS[lang][b.dataset.tone]; });
+  zonesBtn.textContent = tr('zonesTitle');
+  buildZoneChips();   // refresh the "None" label + chips on language change
 }
 langBtn.addEventListener('click',()=>{
   lang = lang==='fr'?'en':'fr';
@@ -1021,6 +1125,13 @@ if(localStorage.getItem('sezam-timers-seed-ver')!==SEED_VERSION){
   run={};
   localStorage.setItem('sezam-timers-seed-ver',SEED_VERSION);
   saveDefs(); saveRun();
+}
+// Seed the default kitchen zones once (each with a distinct sound). Non-destructive:
+// existing timers stay un-zoned and keep their legacy sound until assigned a zone.
+if(!localStorage.getItem(LS_ZONES)){
+  const names = lang==='fr' ? ['Chaud','Froid','Four','Pâtisserie'] : ['Hot line','Cold line','Oven','Pastry'];
+  zones = names.map((name,i)=>({id:uid(),name,sound:TONES[i%TONES.length],color:ZONE_COLORS[i%ZONE_COLORS.length]}));
+  saveZones();
 }
 // One-time, NON-destructive: surface the chained "Steak" demo on existing installs
 // (which kept their own timers above) so the multi-step feature is visible without
