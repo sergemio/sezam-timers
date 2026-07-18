@@ -55,5 +55,6 @@ Thème **light** (demandé par Serge) : fond papier chaud `#f5f1e8`, texte charb
 - 2026-07-18 — **Zones hardcodées + défaut EN + call-outs EN** (retour Serge, `SEED_VERSION 3→4`, SW `v17`) : **zones à ids stables** (`chaud/four/fritteuse/hello`) semées avec les timers → chaque timer **pré-assigné à sa zone** (répartition Serge : Manouche→Four, Mozzarella/Fries/Crispy→Fritteuse, Melt cheese→Four, Dough→**Hello**, Cook chicken→Four). **Langue par défaut = anglais** (défaut `'en'` + reseed force `'en'` + re-pick voix EN). **Call-outs en anglais** (phrases + étapes Cook chicken « Cook/Flip/Cook ») pour que la voix EN ne prononce pas du FR ; switch FR = l'utilisateur réécrit les phrases. **Reseed remplace timers ET zones** (les **sons des zones repassent aux défauts** — inconnus de moi — ajustables dans le gestionnaire). ⚠️ Zone « **Hello** » (assignée à Dough) ressemble à un nom de test — à confirmer/renommer. Vérifié headless (EN + pastilles). Poussé (commit `9a0cdb5`).
 
 ## Déploiement
-GitHub Pages, repo `sergemio/sezam-timers` → https://sergemio.github.io/sezam-timers/
+GitHub Pages, repo `sergemio/cadence-kitchen-timer` → https://sergemio.github.io/cadence-kitchen-timer/
+*(repo renommé depuis `sezam-timers` le 18/07/2026 ; les clés localStorage/cache internes gardent le préfixe `sezam-` — NE PAS renommer, ça effacerait les timers des utilisateurs.)*
 Pour mettre à jour : commit + push sur `main` (bumper `CACHE` dans `sw.js` à chaque changement pour forcer le refresh des clients).
