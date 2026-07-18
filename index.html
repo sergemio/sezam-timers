@@ -455,17 +455,26 @@ const ZONE_COLORS=['#e8600f','#3d7f8c','#dd9207','#0fa96a','#2f6f9e','#b0483a'];
 const PRESETS=[[0,30],[1,0],[2,0],[3,0],[5,0],[8,0],[10,0],[15,0]];
 // Default timer set. Bumping SEED_VERSION re-applies this list on next load
 // (this REPLACES the current timers — including any added by hand).
-const SEED_VERSION='3';   // bumped → re-applies the DEFAULTS below once (replaces existing timers)
-// Real Sezam&Co timers, hardcoded in this order. No zone assigned (unknown per timer).
+const SEED_VERSION='4';   // bumped → re-applies the DEFAULTS + zones below once (replaces existing)
+// Real Sezam&Co timers, hardcoded in Serge's order, each pre-assigned to its zone.
+// Ships in ENGLISH (default language + English call-outs). Switching to FR = user rewrites phrases.
 const DEFAULTS=[
-  {name:'Manouche',         durationSec:45,  phrase:'La manouche est prête'},
-  {name:'Mozzarella sticks',durationSec:135, phrase:'Les mozzarella sticks sont prêtes'},
-  {name:'Fries',            durationSec:260, phrase:'Les frites sont prêtes'},
-  {name:'Crispy',           durationSec:375, phrase:'Le crispy est prêt'},
-  {name:'Melt cheese',      durationSec:210, phrase:'Le fromage est fondu'},
-  {name:'Dough',            durationSec:720, phrase:'La pâte est prête'},
-  {name:'Cook chicken',     phrase:'Le poulet est prêt',
-    steps:[{name:'Cuire',sec:360},{name:'Retourner',sec:90},{name:'Cuire',sec:360}]},   // 6:00 + 1:30 + 6:00 = 13:30
+  {name:'Manouche',         durationSec:45,  zoneId:'four',      phrase:'The manouche is ready'},
+  {name:'Mozzarella sticks',durationSec:135, zoneId:'fritteuse', phrase:'The mozzarella sticks are ready'},
+  {name:'Fries',            durationSec:260, zoneId:'fritteuse', phrase:'The fries are ready'},
+  {name:'Crispy',           durationSec:375, zoneId:'fritteuse', phrase:'The crispy is ready'},
+  {name:'Melt cheese',      durationSec:210, zoneId:'four',      phrase:'The melt cheese is ready'},
+  {name:'Dough',            durationSec:720, zoneId:'hello',     phrase:'The dough is ready'},
+  {name:'Cook chicken',     zoneId:'four',   phrase:'The chicken is ready',
+    steps:[{name:'Cook',sec:360},{name:'Flip',sec:90},{name:'Cook',sec:360}]},   // 6:00 + 1:30 + 6:00 = 13:30
+];
+// Kitchen zones — STABLE ids so the DEFAULTS above can reference them. Colours match
+// Serge's setup; sounds are sensible defaults (adjustable in the Zones manager).
+const ZONE_SEED=[
+  {id:'chaud',     name:'Chaud',     sound:'Bell',  color:'#e8600f'},
+  {id:'four',      name:'Four',      sound:'Chime', color:'#dd9207'},
+  {id:'fritteuse', name:'Fritteuse', sound:'Beep',  color:'#0fa96a'},
+  {id:'hello',     name:'Hello',     sound:'Ping',  color:'#3d7f8c'},
 ];
 let timers=[];            // [{id,name,durationSec,zoneId,phrase}] or [{...,steps:[{name,sec}]}] (legacy: tone)
 let zones=[];             // [{id,name,sound,color}] — the alarm SOUND belongs to the zone, not the timer
@@ -473,7 +482,7 @@ let run={};               // {id:{status:'running'|'ringing', endsAt, nextVoiceA
 let editing=false, editingId=null;
 
 /* ================= i18n (FR default, switchable EN) ================= */
-let lang = localStorage.getItem('sezam-lang') || 'fr';
+let lang = localStorage.getItem('sezam-lang') || 'en';
 const TONE_LABELS={ fr:{Bell:'Cloche',Beep:'Bip',Chime:'Carillon',Ping:'Ping',Buzz:'Buzzer',Marimba:'Marimba'}, en:{Bell:'Bell',Beep:'Beep',Chime:'Chime',Ping:'Ping',Buzz:'Buzzer',Marimba:'Marimba'} };
 const I18N={
   fr:{
@@ -1124,17 +1133,15 @@ load();
 // running timer). Real cross-device sync will come with the database later.
 if(localStorage.getItem('sezam-timers-seed-ver')!==SEED_VERSION){
   timers=DEFAULTS.map(d=>({id:uid(),...d}));
+  zones=ZONE_SEED.map(z=>({...z}));                     // stable-id zones, matched by the timers above
   run={};
+  lang='en'; localStorage.setItem('sezam-lang','en');   // hardcoded default set ships in English
+  if('speechSynthesis' in window) pickVoice();          // re-pick an English voice for the call-outs
   localStorage.setItem('sezam-timers-seed-ver',SEED_VERSION);
-  saveDefs(); saveRun();
+  saveDefs(); saveZones(); saveRun();
 }
-// Seed the default kitchen zones once (each with a distinct sound). Non-destructive:
-// existing timers stay un-zoned and keep their legacy sound until assigned a zone.
-if(!localStorage.getItem(LS_ZONES)){
-  const names = lang==='fr' ? ['Chaud','Froid','Four','Pâtisserie'] : ['Hot line','Cold line','Oven','Pastry'];
-  zones = names.map((name,i)=>({id:uid(),name,sound:TONES[i%TONES.length],color:ZONE_COLORS[i%ZONE_COLORS.length]}));
-  saveZones();
-}
+// Fallback: make sure zones exist even if timers weren't reseeded this load.
+if(!localStorage.getItem(LS_ZONES)){ zones=ZONE_SEED.map(z=>({...z})); saveZones(); }
 // One-time, NON-destructive: surface the chained "Steak" demo on existing installs
 // (which kept their own timers above) so the multi-step feature is visible without
 // wiping anything. Skips if a chained timer already exists.

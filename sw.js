@@ -1,7 +1,7 @@
 /* Minimal offline-first service worker for Sezam Kitchen Timers.
    Caches the app shell so it keeps working if the kitchen wifi drops.
    Bump CACHE when shipping changes so clients pull the new version. */
-const CACHE = 'sezam-timers-v16';
+const CACHE = 'sezam-timers-v17';
 const SHELL = [
   './',
   './index.html',
