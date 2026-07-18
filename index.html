@@ -455,15 +455,17 @@ const ZONE_COLORS=['#e8600f','#3d7f8c','#dd9207','#0fa96a','#2f6f9e','#b0483a'];
 const PRESETS=[[0,30],[1,0],[2,0],[3,0],[5,0],[8,0],[10,0],[15,0]];
 // Default timer set. Bumping SEED_VERSION re-applies this list on next load
 // (this REPLACES the current timers — including any added by hand).
-const SEED_VERSION='2';   // unchanged → existing installs keep their own timers
+const SEED_VERSION='3';   // bumped → re-applies the DEFAULTS below once (replaces existing timers)
+// Real Sezam&Co timers, hardcoded in this order. No zone assigned (unknown per timer).
 const DEFAULTS=[
-  {name:'Fries',            durationSec:240, tone:'Bell',  phrase:'The fries are ready'},
-  {name:'Mozzarella sticks',durationSec:135, tone:'Beep',  phrase:'The mozzarella sticks are ready'},
-  {name:'Manoushe',         durationSec:45,  tone:'Chime', phrase:'The manoushe is ready'},
-  {name:'Crispy chicken',   durationSec:360, tone:'Bell',  phrase:'The crispy chicken is ready'},
-  {name:'Dough making',     durationSec:720, tone:'Beep',  phrase:'The dough is ready'},
-  {name:'Cooking chicken',  durationSec:360, tone:'Chime', phrase:'The cooked chicken is ready'},
-  {name:'Donut',            durationSec:90,  tone:'Bell',  phrase:'The donuts are ready'},
+  {name:'Manouche',         durationSec:45,  phrase:'La manouche est prête'},
+  {name:'Mozzarella sticks',durationSec:135, phrase:'Les mozzarella sticks sont prêtes'},
+  {name:'Fries',            durationSec:260, phrase:'Les frites sont prêtes'},
+  {name:'Crispy',           durationSec:375, phrase:'Le crispy est prêt'},
+  {name:'Melt cheese',      durationSec:210, phrase:'Le fromage est fondu'},
+  {name:'Dough',            durationSec:720, phrase:'La pâte est prête'},
+  {name:'Cook chicken',     phrase:'Le poulet est prêt',
+    steps:[{name:'Cuire',sec:360},{name:'Retourner',sec:90},{name:'Cuire',sec:360}]},   // 6:00 + 1:30 + 6:00 = 13:30
 ];
 let timers=[];            // [{id,name,durationSec,zoneId,phrase}] or [{...,steps:[{name,sec}]}] (legacy: tone)
 let zones=[];             // [{id,name,sound,color}] — the alarm SOUND belongs to the zone, not the timer
